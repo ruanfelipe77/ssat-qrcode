@@ -13,14 +13,21 @@ $statuses = $statusModel->getActive(); // id, name, color, icon
 $productModel = new Product($db);
 $products = $productModel->getAll();
 
-// Index statuses by id for quick lookup
+// Index statuses by id and find the 'em_estoque' status id
 $statusById = [];
-foreach ($statuses as $s) { $statusById[(int)$s['id']] = $s; }
+$estoqueStatusId = null;
+foreach ($statuses as $s) {
+    $sid = (int)$s['id'];
+    $statusById[$sid] = $s;
+    if ($s['name'] === 'em_estoque') { $estoqueStatusId = $sid; }
+}
 
-// Group products by status_id (unknown go to 0 bucket)
+// Group products by status_id; if missing, map to 'em_estoque' when available
 $grouped = [];
 foreach ($products as $p) {
-    $sid = isset($p['status_id']) && $p['status_id'] !== null ? (int)$p['status_id'] : 0;
+    $sid = isset($p['status_id']) && $p['status_id'] !== null
+        ? (int)$p['status_id']
+        : ($estoqueStatusId ?? 0);
     if (!isset($grouped[$sid])) $grouped[$sid] = [];
     $grouped[$sid][] = $p;
 }
