@@ -1,208 +1,213 @@
 $(document).ready(function () {
-  $('#mcp-table').DataTable({
-    "pagingType": "full_numbers",
-    "lengthMenu": [
-      [10, 25, 50, -1],
-      [10, 25, 50, "Todos"]
-    ],
-    responsive: true,
-    language: {
-      "decimal": ",",
-      "thousands": ".",
-      "processing": "Processando...",
-      "search": "Pesquisar:",
-      "lengthMenu": "Mostrar _MENU_ registros",
-      "info": "Mostrando de _START_ até _END_ de _TOTAL_ registros",
-      "infoEmpty": "Mostrando 0 até 0 de 0 registros",
-      "infoFiltered": "(filtrado de _MAX_ registros no total)",
-      "infoPostFix": "",
-      "loadingRecords": "Carregando...",
-      "zeroRecords": "Nenhum registro encontrado",
-      "emptyTable": "Nenhum registro disponível na tabela",
-      "paginate": {
-        "first": "Primeiro",
-        "previous": "Anterior",
-        "next": "Próximo",
-        "last": "Último"
+  // Função para limpar e resetar o formulário
+  function resetForm() {
+    const form = $("#mcpForm");
+    form.removeClass("was-validated");
+    form[0].reset();
+    $("#action").val("");
+    $("#id").val("");
+  }
+
+  // Manipulador para adicionar novo produto
+  $("#add-mcp").on("click", function () {
+    resetForm();
+    $("#action").val("add");
+    $(".modal-title-text").text("Adicionar Produto");
+    $(".btn-acao").html('<i class="fas fa-save me-2"></i>Salvar');
+    const modal = new bootstrap.Modal(document.getElementById("mcpModal"));
+    modal.show();
+  });
+
+  // Manipulador para editar produto
+  $(".edit-mcp").on("click", function () {
+    const id = $(this).data("id");
+
+    $.ajax({
+      type: "GET",
+      url: "src/controllers/ProductController.php",
+      data: { id: id },
+      success: function (response) {
+        const mcp = JSON.parse(response);
+        resetForm();
+
+        $(".modal-title-text").text("Editar Produto");
+        $(".btn-acao").html('<i class="fas fa-save me-2"></i>Atualizar');
+        $("#action").val("edit");
+        $("#id").val(mcp.id);
+        $("#serial_number").val(mcp.serial_number);
+        $("#sale_date").val(mcp.sale_date);
+        $("#destination").val(mcp.destination);
+        $("#warranty").val(mcp.warranty);
+        $("#tipo_id").val(mcp.tipo_id);
+
+        const modal = new bootstrap.Modal(document.getElementById("mcpModal"));
+        modal.show();
       },
-      "aria": {
-        "sortAscending": ": ative para ordenar a coluna de forma ascendente",
-        "sortDescending": ": ative para ordenar a coluna de forma descendente"
-      }
+      error: function () {
+        Swal.fire({
+          title: "Erro!",
+          text: "Houve um problema ao buscar os dados do produto.",
+          icon: "error",
+        });
+      },
+    });
+  });
+
+  // Manipulador para submissão do formulário
+  $("#mcpForm").on("submit", function (event) {
+    event.preventDefault();
+
+    const form = $(this)[0];
+    if (!form.checkValidity()) {
+      event.stopPropagation();
+      form.classList.add("was-validated");
+      return;
     }
-  });
 
-  $('#add-mcp').on('click', function () {
-    $('#action').val('add');
-    $('#id').val('');
-    $('#serial_number').val('');
-    $('#sale_date').val('');
-    $('#destination').val('');
-    $('#warranty').val('');
-    $('#mcpModal').modal('show');
-  });
-
-  $('#add-produto').on('click', function () {
-    $('#action_tipo').val('add');
-    $('#id').val('');
-    $('#name').val('');
-    $('#tipoModal').modal('show');
-  });
-
-  $('#mcpForm').on('submit', function (event) {
-    event.preventDefault();
-    var formData = $(this).serialize();
+    const formData = $(this).serialize();
+    const isEdit = $("#action").val() === "edit";
 
     $.ajax({
-      type: 'POST',
-      url: 'src/controllers/ProductController.php',
+      type: "POST",
+      url: "src/controllers/ProductController.php",
       data: formData,
       success: function (response) {
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("mcpModal")
+        );
+        modal.hide();
+
         Swal.fire({
-          title: 'Sucesso!',
-          icon: 'success',
-          confirmButtonText: 'OK'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            location.reload();
-          }
+          title: "Sucesso!",
+          text: isEdit
+            ? "Produto atualizado com sucesso!"
+            : "Produto criado com sucesso!",
+          icon: "success",
+        }).then(() => {
+          location.reload();
         });
       },
-      error: function (response) {
+      error: function () {
         Swal.fire({
-          title: 'Erro!',
-          text: 'Houve um problema ao salvar o MCP.',
-          icon: 'error',
-          confirmButtonText: 'OK'
+          title: "Erro!",
+          text: "Houve um problema ao salvar o produto.",
+          icon: "error",
         });
-      }
+      },
     });
   });
 
-  $('#tipoForm').on('submit', function (event) {
-    event.preventDefault();
-    var formData = $(this).serialize();
-    $.ajax({
-      type: 'POST',
-      url: 'src/controllers/TipoController.php',
-      data: formData,
-      success: function (response) {
-        Swal.fire({
-          title: 'Sucesso!',
-          icon: 'success',
-          confirmButtonText: 'OK'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            location.reload();
-          }
-        });
-      },
-      error: function (response) {
-        Swal.fire({
-          title: 'Erro!',
-          text: 'Houve um problema ao salvar o Tipo do Produto.',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
-      }
-    });
-  });
+  // Manipulador para deletar produto
+  $(".delete-mcp").on("click", function () {
+    const id = $(this).data("id");
 
-  $('.delete-mcp').on('click', function () {
-    var id = $(this).data('id');
     Swal.fire({
-      title: 'Você tem certeza?',
-      text: "Você não poderá reverter isso!",
-      icon: 'warning',
+      title: "Confirmar exclusão",
+      text: "Esta ação não poderá ser revertida!",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sim, delete!',
-      cancelButtonText: 'Cancelar'
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: '<i class="fas fa-trash me-2"></i>Sim, excluir!',
+      cancelButtonText: '<i class="fas fa-times me-2"></i>Cancelar',
+      reverseButtons: true,
     }).then((result) => {
       if (result.isConfirmed) {
         $.ajax({
-          type: 'POST',
-          url: 'src/controllers/ProductController.php',
-          data: { action: 'delete', id: id },
+          type: "POST",
+          url: "src/controllers/ProductController.php",
+          data: { action: "delete", id: id },
           success: function (response) {
-            var res = JSON.parse(response);
+            const res = JSON.parse(response);
             if (res.success) {
               Swal.fire({
-                title: 'Deletado!',
-                text: 'MCP foi deletado.',
-                icon: 'success',
-                confirmButtonText: 'OK'
-              }).then((result) => {
-                if (result.isConfirmed) {
-                  location.reload();
-                }
+                title: "Excluído!",
+                text: "Produto foi excluído com sucesso.",
+                icon: "success",
+              }).then(() => {
+                location.reload();
               });
             } else {
               Swal.fire({
-                title: 'Erro!',
-                text: 'Houve um problema ao deletar o MCP.',
-                icon: 'error',
-                confirmButtonText: 'OK'
+                title: "Erro!",
+                text: "Houve um problema ao excluir o produto.",
+                icon: "error",
               });
             }
           },
-          error: function (response) {
+          error: function () {
             Swal.fire({
-              title: 'Erro!',
-              text: 'Houve um problema ao deletar o MCP.',
-              icon: 'error',
-              confirmButtonText: 'OK'
+              title: "Erro!",
+              text: "Houve um problema ao excluir o produto.",
+              icon: "error",
             });
-          }
+          },
         });
       }
     });
   });
 
-  $('.edit-mcp').on('click', function () {
-    var id = $(this).data('id');
-    $.ajax({
-      type: 'GET',
-      url: 'src/controllers/ProductController.php',
-      data: { id: id },
-      success: function (response) {
-        var mcp = JSON.parse(response);
-        $('#mcpModalLabel').text('Editar MCP');
-        $('.btn-acao').text('Editar');
-        $('#action').val('edit');
-        $('#id').val(mcp.id);
-        $('#serial_number').val(mcp.serial_number);
-        $('#sale_date').val(mcp.sale_date);
-        $('#destination').val(mcp.destination);
-        $('#warranty').val(mcp.warranty);
-        $('#tipo_id option[value="' + mcp.tipo_id + '"]').prop('selected', true);
-        $('#mcpModal').modal('show');
-      },
-      error: function (response) {
-        Swal.fire({
-          title: 'Erro!',
-          text: 'Houve um problema ao buscar os dados do MCP.',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
+  // Manipulador para imprimir QR Code
+  $(".print-qrcode").on("click", function () {
+    const id = $(this).data("id");
+    const qrCodePath = "public/qrcodes/" + id + ".png";
+
+    Swal.fire({
+      title: "QR Code",
+      imageUrl: qrCodePath,
+      imageWidth: 200,
+      imageHeight: 200,
+      showCloseButton: true,
+      showCancelButton: true,
+      confirmButtonText: '<i class="fas fa-print me-2"></i>Imprimir',
+      cancelButtonText: '<i class="fas fa-times me-2"></i>Fechar',
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const printWindow = window.open();
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>QR Code</title>
+              <style>
+                body {
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  height: 100vh;
+                  margin: 0;
+                }
+                img {
+                  width: 2cm;
+                  height: 2cm;
+                }
+              </style>
+            </head>
+            <body>
+              <img src="${qrCodePath}" />
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
       }
     });
   });
 
-  $('.print-qrcode').on('click', function () {
-    var id = $(this).data('id');
-    var qrCodePath = 'public/qrcodes/' + id + '.png';
+  // Fechar modal ao clicar no botão de fechar
+  $('.btn-close, .btn[data-bs-dismiss="modal"]').on("click", function () {
+    const modal = bootstrap.Modal.getInstance(
+      document.getElementById("mcpModal")
+    );
+    if (modal) {
+      modal.hide();
+    }
+  });
 
-    var qrCodeImage = new Image();
-    qrCodeImage.src = qrCodePath;
-    qrCodeImage.onload = function () {
-      var printWindow = window.open();
-      printWindow.document.write('<html><body><img src="' + qrCodePath + '" style="width: 2cm; height: 2cm;" /></body></html>');
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-    };
+  // Resetar formulário quando o modal for fechado
+  $("#mcpModal").on("hidden.bs.modal", function () {
+    resetForm();
   });
 });

@@ -9,12 +9,121 @@ class Product
         $this->conn = $db;
     }
 
+    private function checkIfColumnExists($table, $column) {
+        try {
+            $sql = "SELECT $column FROM $table LIMIT 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return true;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
     public function getAll()
     {
-        $sql = "SELECT p.id, p.serial_number, p.sale_date, p.destination, p.warranty, t.nome AS tipo_name FROM products p JOIN tipos t ON p.tipo_id = t.id";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            // Verifica se as colunas existem
+            $hasBatchColumn = $this->checkIfColumnExists('products', 'production_batch_id');
+            $hasOrderColumn = $this->checkIfColumnExists('products', 'production_order_id');
+            
+            
+            if ($hasBatchColumn && $hasOrderColumn) {
+                // Versão completa com lotes e pedidos
+                $sql = "SELECT p.id, 
+                               p.serial_number, 
+                               p.sale_date, 
+                               p.destination, 
+                               p.warranty, 
+                               p.status,
+                               COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
+                               COALESCE(pb.batch_number, 'Sem Lote') as batch_number,
+                               COALESCE(so.order_number, '') AS pp_number,
+                               CASE 
+                                   WHEN p.destination = 'estoque' THEN 'Em Estoque'
+                                   WHEN c.name IS NOT NULL THEN c.name
+                                   WHEN p.destination REGEXP '^[0-9]+$' THEN CONCAT('Cliente ID: ', p.destination)
+                                   ELSE p.destination
+                               END as client_name,
+                               COALESCE(c.city, '') as client_city,
+                               COALESCE(c.state, '') as client_state
+                        FROM products p 
+                        LEFT JOIN tipos t ON p.tipo_id = t.id
+                        LEFT JOIN production_batches pb ON p.production_batch_id = pb.id
+                        LEFT JOIN sales_orders so ON p.production_order_id = so.id
+                        LEFT JOIN clients c ON (p.destination REGEXP '^[0-9]+$' AND p.destination = c.id)
+                        ORDER BY p.id DESC";
+            } else {
+                // Versão básica que funciona com estrutura original
+                $sql = "SELECT p.id, 
+                               p.serial_number, 
+                               p.sale_date, 
+                               p.destination, 
+                               p.warranty, 
+                               COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
+                               'Sem Lote' as batch_number,
+                               '' AS pp_number,
+                               CASE 
+                                   WHEN p.destination = 'estoque' THEN 'Em Estoque'
+                                   WHEN c.name IS NOT NULL THEN c.name
+                                   WHEN p.destination REGEXP '^[0-9]+$' THEN CONCAT('Cliente ID: ', p.destination)
+                                   ELSE p.destination
+                               END as client_name,
+                               COALESCE(c.city, '') as client_city,
+                               COALESCE(c.state, '') as client_state
+                        FROM products p 
+                        LEFT JOIN tipos t ON p.tipo_id = t.id
+                        LEFT JOIN clients c ON (p.destination REGEXP '^[0-9]+$' AND p.destination = c.id)
+                        ORDER BY p.id DESC";
+            }
+            
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error in Product::getAll(): " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getAvailableProducts()
+    {
+        try {
+            $hasBatchColumn = $this->checkIfColumnExists('products', 'production_batch_id');
+            $hasOrderColumn = $this->checkIfColumnExists('products', 'production_order_id');
+            
+            if ($hasBatchColumn && $hasOrderColumn) {
+                $sql = "SELECT p.id, 
+                               p.serial_number, 
+                               p.warranty, 
+                               COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
+                               COALESCE(pb.batch_number, 'Sem Lote') as batch_number
+                        FROM products p 
+                        LEFT JOIN tipos t ON p.tipo_id = t.id
+                        LEFT JOIN production_batches pb ON p.production_batch_id = pb.id
+                        WHERE p.production_order_id IS NULL
+                        ORDER BY p.serial_number ASC";
+            } else {
+                $sql = "SELECT p.id, 
+                               p.serial_number, 
+                               p.warranty, 
+                               COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
+                               'Sem Lote' as batch_number
+                        FROM products p 
+                        LEFT JOIN tipos t ON p.tipo_id = t.id
+                        WHERE p.destination = 'estoque'
+                        ORDER BY p.serial_number ASC";
+            }
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error in Product::getAvailableProducts(): " . $e->getMessage());
+            return [];
+        }
     }
 
     public function create($data)
@@ -58,5 +167,54 @@ class Product
         $stmt = $this->conn->prepare('SELECT * FROM products WHERE id = :id');
         $stmt->execute(['id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getByBatchId($batchId)
+    {
+        $sql = "SELECT p.*, 
+                       t.nome AS tipo_name,
+                       po.order_number AS pp_number
+                FROM products p 
+                JOIN tipos t ON p.tipo_id = t.id
+                LEFT JOIN production_orders po ON p.production_order_id = po.id
+                WHERE p.production_batch_id = ?
+                ORDER BY p.serial_number ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$batchId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getByOrderId($orderId)
+    {
+        $sql = "SELECT p.*, 
+                       t.nome AS tipo_name,
+                       pb.batch_number
+                FROM products p 
+                JOIN tipos t ON p.tipo_id = t.id
+                LEFT JOIN production_batches pb ON p.production_batch_id = pb.id
+                WHERE p.production_order_id = ?
+                ORDER BY p.serial_number ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$orderId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getByClientId($clientId) {
+        try {
+            $sql = "SELECT p.id, 
+                           p.serial_number, 
+                           p.warranty, 
+                           COALESCE(t.nome, 'Sem Tipo') AS tipo_name
+                    FROM products p 
+                    LEFT JOIN tipos t ON p.tipo_id = t.id
+                    WHERE p.destination = ?
+                    ORDER BY p.serial_number ASC";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$clientId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error in Product::getByClientId(): " . $e->getMessage());
+            return [];
+        }
     }
 }
