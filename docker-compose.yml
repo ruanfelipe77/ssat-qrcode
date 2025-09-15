@@ -16,6 +16,7 @@ services:
       DB_DATABASE: wwcent_qrcode
       DB_USERNAME: ssat_user
       DB_PASSWORD: ssat_password
+      APP_PUBLIC_URL: http://localhost:8080
     networks:
       - ssat-network
 

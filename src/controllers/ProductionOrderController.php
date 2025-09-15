@@ -2,6 +2,7 @@
 
 require '../../database.php';
 require '../../src/models/ProductionOrder.php';
+require '../../src/models/Product.php';
 
 $poModel = new ProductionOrder(Database::getInstance()->getConnection());
 
@@ -32,6 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => $success]);
             break;
 
+        case 'update_order':
+            $result = $poModel->update($_POST);
+            echo json_encode($result);
+            break;
+
         case 'generate_pdf':
             $id = $_POST['id'] ?? '';
             $result = $poModel->generatePDF($id);
@@ -53,6 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $po = $poModel->getById($_GET['id']);
             echo json_encode($po);
         }
+    } elseif (isset($_GET['available_products'])) {
+        // Lista de produtos disponíveis para incluir em pedidos
+        $productModel = new Product(Database::getInstance()->getConnection());
+        $products = $productModel->getAvailableProducts();
+        echo json_encode($products);
     } else {
         $pos = $poModel->getAll();
         echo json_encode($pos);

@@ -16,13 +16,14 @@ $availableProducts = $productModel->getAvailableProducts();
             <div class="modal-header">
                 <h5 class="modal-title" id="orderModalLabel">
                     <i class="fas fa-clipboard-list me-2"></i>
-                    Novo Pedido
+                    <span class="order-modal-title-text">Novo Pedido</span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="orderForm" class="needs-validation" novalidate>
-                    <input type="hidden" name="action" value="create_order">
+                    <input type="hidden" name="action" id="order_action" value="create_order">
+                    <input type="hidden" name="id" id="order_id" value="">
 
                     <div class="row mb-4">
                         <div class="col-md-6">
@@ -109,7 +110,7 @@ $availableProducts = $productModel->getAvailableProducts();
                             </div>
 
                             <!-- Lista de produtos agrupados -->
-                            <div class="products-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; background: #f8f9fa;">
+                            <div id="products-container" class="products-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; background: #f8f9fa;">
                                 <?php if (empty($availableProducts)): ?>
                                     <div class="text-center text-muted py-5">
                                         <i class="fas fa-box-open mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
@@ -541,7 +542,8 @@ $(document).ready(function() {
         }
 
         const selectedProducts = $('.product-select:checked').length;
-        if (selectedProducts === 0) {
+        const isUpdate = $('#order_action').val() === 'update_order';
+        if (!isUpdate && selectedProducts === 0) {
             Swal.fire({
                 title: 'Atenção!',
                 text: 'Selecione pelo menos um produto para o pedido.',
@@ -553,15 +555,13 @@ $(document).ready(function() {
         const formData = $(this).serialize();
         
         Swal.fire({
-            title: 'Confirmação',
-            html: `
-                Você está prestes a criar um pedido com:<br>
-                <b>${selectedProducts}</b> produtos<br><br>
-                Deseja continuar?
-            `,
+            title: isUpdate ? 'Atualizar pedido' : 'Confirmação',
+            html: isUpdate
+                ? 'Deseja salvar as alterações deste pedido?'
+                : `Você está prestes a criar um pedido com:<br><b>${selectedProducts}</b> produtos<br><br>Deseja continuar?`,
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Sim, criar pedido',
+            confirmButtonText: isUpdate ? 'Salvar alterações' : 'Sim, criar pedido',
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -577,13 +577,19 @@ $(document).ready(function() {
                             );
                             modal.hide();
 
-                            Swal.fire({
-                                title: 'Sucesso!',
-                                text: `Pedido ${res.order_number} criado com sucesso!`,
-                                icon: 'success'
-                            }).then(() => {
-                                location.reload();
-                            });
+                            if (isUpdate) {
+                                Swal.fire({
+                                    title: 'Sucesso!',
+                                    text: 'Pedido atualizado com sucesso!',
+                                    icon: 'success'
+                                }).then(() => { location.reload(); });
+                            } else {
+                                Swal.fire({
+                                    title: 'Sucesso!',
+                                    text: `Pedido ${res.order_number} criado com sucesso!`,
+                                    icon: 'success'
+                                }).then(() => { location.reload(); });
+                            }
                         } else {
                             Swal.fire({
                                 title: 'Erro!',
@@ -595,7 +601,7 @@ $(document).ready(function() {
                     error: function() {
                         Swal.fire({
                             title: 'Erro!',
-                            text: 'Erro ao criar pedido',
+                            text: isUpdate ? 'Erro ao atualizar pedido' : 'Erro ao criar pedido',
                             icon: 'error'
                         });
                     }

@@ -2,7 +2,7 @@
 
 require '../../database.php';
 require '../../src/models/Product.php';
-require '../../libs/phpqrcode/qrlib.php';
+require_once '../../vendor/autoload.php';
 
 $productModel = new Product(Database::getInstance()->getConnection());
 
@@ -31,12 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $product = $productModel->getById($id);
 
             if ($product) {
-                $qrCodeText = json_encode($product);
-                $url = 'https://suporte.centralssat.com.br/qrcode.php?data=' . urlencode($qrCodeText);
-                $filePath = '../../public/qrcodes/' . $id . '.png';
-                QRcode::png($url, $filePath);
-
-                echo json_encode(['success' => true, 'qr_code_path' => $filePath]);
+                // Padroniza payload do QR para URL com id
+                $qrImageUrl = 'src/controllers/QrController.php?id=' . urlencode($id);
+                $qrPageUrl = 'qrcode.php?id=' . urlencode($id);
+                echo json_encode(['success' => true, 'qr_code_url' => $qrImageUrl, 'qrcode_page_url' => $qrPageUrl]);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Falhou na geração do QR-code.']);
             }
@@ -49,14 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = $_POST['id'];
         $product = $productModel->getById($id);
         if ($product) {
-            $qrCodeText = json_encode($product);
-            $filePath = '/../../public/qrcodes/' . $id . '.png';
-
-            $pixelSize = 5;
-            $marginSize = 2;
-
-            QRcode::png($qrCodeText, $filePath, QR_ECLEVEL_L, $pixelSize, $marginSize);
-            echo json_encode(['success' => true]);
+            // Retorna URLs para consumo pelo front
+            $qrImageUrl = 'src/controllers/QrController.php?id=' . urlencode($id);
+            $qrPageUrl = 'qrcode.php?id=' . urlencode($id);
+            echo json_encode(['success' => true, 'qr_code_url' => $qrImageUrl, 'qrcode_page_url' => $qrPageUrl]);
         } else {
             echo json_encode(['success' => false]);
         }
@@ -68,3 +62,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo json_encode($mcp);
     exit;
 }
+

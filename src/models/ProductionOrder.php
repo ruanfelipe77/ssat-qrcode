@@ -9,10 +9,11 @@ class ProductionOrder {
     }
 
     private function generateOrderNumber() {
-        $year = date('Y');
-        
+        // Novo padrão: mmaaaa/0001 (ex.: 092025/0001)
+        $prefix = date('mY');
+
         $query = "SELECT order_number FROM " . $this->table_name . " 
-                 WHERE order_number LIKE 'PP" . $year . "/%' 
+                 WHERE order_number LIKE '" . $prefix . "/%' 
                  ORDER BY order_number DESC LIMIT 1";
         
         $stmt = $this->conn->prepare($query);
@@ -25,7 +26,7 @@ class ProductionOrder {
             $newNumber = 1;
         }
         
-        return 'PP' . $year . '/' . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return $prefix . '/' . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
 
     public function create($data) {
@@ -171,9 +172,11 @@ class ProductionOrder {
                             COALESCE(c.name, 'Cliente Não Encontrado') as client_name, 
                             COALESCE(c.city, '') as client_city, 
                             COALESCE(c.state, '') as client_state,
-                            0 as total_products
+                            COUNT(p.id) as total_products
                      FROM " . $this->table_name . " po
                      LEFT JOIN clients c ON po.client_id = c.id
+                     LEFT JOIN products p ON p.production_order_id = po.id
+                     GROUP BY po.id
                      ORDER BY po.id DESC";
 
             $stmt = $this->conn->prepare($query);
@@ -186,9 +189,10 @@ class ProductionOrder {
     }
 
     public function getProducts($id) {
-        $query = "SELECT p.*, t.nome as tipo_name
+        $query = "SELECT p.*, t.nome as tipo_name, pb.batch_number
                  FROM products p
                  LEFT JOIN tipos t ON p.tipo_id = t.id
+                 LEFT JOIN production_batches pb ON p.production_batch_id = pb.id
                  WHERE p.production_order_id = ?
                  ORDER BY p.serial_number ASC";
 
@@ -207,6 +211,97 @@ class ProductionOrder {
         $stmt->bindParam(":id", $id);
 
         return $stmt->execute();
+    }
+
+    public function update($data) {
+        $this->conn->beginTransaction();
+
+        try {
+            $id = intval($data['id'] ?? 0);
+            if ($id <= 0) {
+                throw new Exception('ID do pedido inválido');
+            }
+
+            // Atualizar cabeçalho do pedido
+            $query = "UPDATE " . $this->table_name . "
+                     SET client_id = :client_id,
+                         order_date = :order_date,
+                         warranty = :warranty,
+                         notes = :notes
+                     WHERE id = :id";
+            $stmt = $this->conn->prepare($query);
+            $client_id = htmlspecialchars(strip_tags($data['client_id']));
+            $order_date = htmlspecialchars(strip_tags($data['order_date']));
+            $warranty = htmlspecialchars(strip_tags($data['warranty']));
+            $notes = htmlspecialchars(strip_tags($data['notes'] ?? ''));
+            $stmt->bindParam(':client_id', $client_id);
+            $stmt->bindParam(':order_date', $order_date);
+            $stmt->bindParam(':warranty', $warranty);
+            $stmt->bindParam(':notes', $notes);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            if (!$stmt->execute()) {
+                throw new Exception('Erro ao atualizar cabeçalho do pedido');
+            }
+
+            // Produtos atualmente no pedido
+            $stmt = $this->conn->prepare("SELECT id FROM products WHERE production_order_id = ?");
+            $stmt->execute([$id]);
+            $current = array_map(fn($r) => intval($r['id']), $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+            // Produtos desejados pelo formulário
+            $desired = isset($data['products']) ? array_map('intval', (array)$data['products']) : [];
+            $desired = array_values(array_unique($desired));
+
+            // Remover: estavam e agora saíram
+            $toRemove = array_diff($current, $desired);
+            if (!empty($toRemove)) {
+                $placeholders = implode(',', array_fill(0, count($toRemove), '?'));
+                $sql = "UPDATE products SET production_order_id = NULL, destination = 'estoque', sale_date = NULL WHERE id IN ($placeholders)";
+                $stmt = $this->conn->prepare($sql);
+                if (!$stmt->execute(array_values($toRemove))) {
+                    throw new Exception('Erro ao remover produtos do pedido');
+                }
+            }
+
+            // Adicionar: não estavam e agora entraram
+            $toAdd = array_diff($desired, $current);
+            if (!empty($toAdd)) {
+                $placeholders = implode(',', array_fill(0, count($toAdd), '?'));
+                // Construir query com CASE para atualizar múltiplos
+                // Mais simples: loop por segurança
+                $sql = "UPDATE products SET production_order_id = :pp_id, sale_date = :sale_date, destination = :client_id, warranty = :warranty WHERE id = :pid AND (production_order_id IS NULL OR production_order_id = :pp_id_null)";
+                $stmt = $this->conn->prepare($sql);
+                foreach ($toAdd as $pid) {
+                    $stmt->bindValue(':pp_id', $id, PDO::PARAM_INT);
+                    $stmt->bindValue(':sale_date', $order_date);
+                    $stmt->bindValue(':client_id', $client_id);
+                    $stmt->bindValue(':warranty', $warranty);
+                    $stmt->bindValue(':pid', $pid, PDO::PARAM_INT);
+                    $stmt->bindValue(':pp_id_null', $id, PDO::PARAM_INT);
+                    if (!$stmt->execute()) {
+                        throw new Exception('Erro ao adicionar produto #' . $pid . ' ao pedido');
+                    }
+                }
+            }
+
+            // Manter: atualizar dados se cabeçalho mudou
+            $toKeep = array_intersect($current, $desired);
+            if (!empty($toKeep)) {
+                $placeholders = implode(',', array_fill(0, count($toKeep), '?'));
+                $params = array_merge([$order_date, $client_id, $warranty], array_values($toKeep));
+                $sql = "UPDATE products SET sale_date = ?, destination = ?, warranty = ? WHERE id IN ($placeholders)";
+                $stmt = $this->conn->prepare($sql);
+                if (!$stmt->execute($params)) {
+                    throw new Exception('Erro ao atualizar produtos do pedido');
+                }
+            }
+
+            $this->conn->commit();
+            return ['success' => true];
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 
     public function generatePDF($id) {

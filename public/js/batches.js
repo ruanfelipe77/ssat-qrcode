@@ -1,4 +1,15 @@
 $(document).ready(function () {
+  // Evitar backdrops presos ao fechar o modal de produtos
+  (function setupModalCleanup() {
+    const modalEl = document.getElementById("productsModal");
+    if (modalEl) {
+      modalEl.addEventListener("hidden.bs.modal", function () {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('padding-right');
+      });
+    }
+  })();
   // Inicialização do DataTable
   if ($.fn.DataTable.isDataTable("#batches-table")) {
     $("#batches-table").DataTable().destroy();
@@ -277,9 +288,8 @@ $(document).ready(function () {
           }
 
           // Inicializar o modal
-          const modal = new bootstrap.Modal(
-            document.getElementById("productsModal")
-          );
+          const el = document.getElementById("productsModal");
+          const modal = bootstrap.Modal.getOrCreateInstance(el);
           modal.show();
         } catch (e) {
           console.error("Erro ao processar produtos:", response);
@@ -310,11 +320,18 @@ $(document).ready(function () {
       });
       return;
     }
-
-    // Aqui você pode implementar a impressão em lote
+    // Abrir os QRs selecionados em novas abas (implementação básica)
+    selectedProducts.forEach((id, idx) => {
+      setTimeout(() => {
+        window.open(
+          `src/controllers/QrController.php?id=${encodeURIComponent(id)}&s=300`,
+          "_blank"
+        );
+      }, idx * 150);
+    });
     Swal.fire({
       title: "Impressão em Lote",
-      text: `Imprimindo ${selectedProducts.length} QR codes...`,
+      text: `Abrindo ${selectedProducts.length} QR codes em novas abas...`,
       icon: "info",
     });
   });
@@ -332,14 +349,24 @@ $(document).ready(function () {
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
-        // Implementar impressão em lote
+        // Você pode implementar um endpoint para gerar PDF/ZIP; por ora, selecione manualmente e use "Imprimir Selecionados".
         Swal.fire({
-          title: "Impressão iniciada!",
-          text: "Os QR codes estão sendo gerados...",
-          icon: "success",
+          title: "Em breve",
+          text: "Para imprimir em lote, selecione os itens e clique em 'Imprimir Selecionados'.",
+          icon: "info",
         });
       }
     });
+  });
+
+  // Imprimir QR individual (abrir em nova aba)
+  $(document).on("click", ".print-qrcode", function () {
+    const id = $(this).data("id");
+    if (!id) return;
+    window.open(
+      `src/controllers/QrController.php?id=${encodeURIComponent(id)}&s=300`,
+      "_blank"
+    );
   });
 
   // Ver observações (usando delegação de eventos)

@@ -1,6 +1,8 @@
 <?php
-$jsonData = $_GET['data'] ?? '{}';
-$data = json_decode($jsonData, true);
+// Preferirá buscar por ID; fallback para JSON em ?data=
+$id = isset($_GET['id']) ? trim($_GET['id']) : null;
+$jsonData = $_GET['data'] ?? null;
+$data = $jsonData ? json_decode($jsonData, true) : null;
 require 'database.php';
 
 function getTipoName($tipo_id, $conn) {
@@ -16,7 +18,42 @@ function getTipoName($tipo_id, $conn) {
 $db = Database::getInstance();
 $conn = $db->getConnection();
 
-$tipoName = getTipoName($data['tipo_id'], $conn);
+// Buscar produto por ID (preferido); caso contrário, usar dados do JSON
+$product = null;
+if ($id) {
+  $stmt = $conn->prepare('SELECT * FROM products WHERE id = :id');
+  $stmt->execute(['id' => $id]);
+  $product = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Montar fonte de dados para exibição
+if ($product) {
+  $display = [
+    'tipo_id' => $product['tipo_id'] ?? null,
+    'serial_number' => $product['serial_number'] ?? '',
+    'sale_date' => $product['sale_date'] ?? '',
+    'destination' => $product['destination'] ?? '',
+    'warranty' => $product['warranty'] ?? '',
+  ];
+} elseif (is_array($data)) {
+  $display = [
+    'tipo_id' => $data['tipo_id'] ?? null,
+    'serial_number' => $data['serial_number'] ?? '',
+    'sale_date' => $data['sale_date'] ?? '',
+    'destination' => $data['destination'] ?? '',
+    'warranty' => $data['warranty'] ?? '',
+  ];
+} else {
+  $display = [
+    'tipo_id' => null,
+    'serial_number' => '',
+    'sale_date' => '',
+    'destination' => '',
+    'warranty' => '',
+  ];
+}
+
+$tipoName = $display['tipo_id'] !== null ? getTipoName($display['tipo_id'], $conn) : 'Tipo Desconhecido';
 ?>
 
 <!DOCTYPE html>
@@ -60,10 +97,10 @@ $tipoName = getTipoName($data['tipo_id'], $conn);
         <h2>Informações do Produto</h2>
         <ul>
           <li><strong>Produto:</strong> <?= htmlspecialchars($tipoName) ?></li>
-          <li><strong>Número de Série:</strong> <?= htmlspecialchars($data['serial_number']) ?></li>
-          <li><strong>Data da Venda:</strong> <?= (new DateTime($data['sale_date']))->format('d/m/Y') ?></li>
-          <li><strong>Destino:</strong> <?= htmlspecialchars($data['destination']) ?></li>
-          <li><strong>Garantia:</strong> <?= htmlspecialchars($data['warranty']) ?></li>
+          <li><strong>Número de Série:</strong> <?= htmlspecialchars($display['serial_number']) ?></li>
+          <li><strong>Data da Venda:</strong> <?= $display['sale_date'] ? (new DateTime($display['sale_date']))->format('d/m/Y') : '' ?></li>
+          <li><strong>Destino:</strong> <?= htmlspecialchars($display['destination']) ?></li>
+          <li><strong>Garantia:</strong> <?= htmlspecialchars($display['warranty']) ?></li>
         </ul>
       </div>
     </div>

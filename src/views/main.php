@@ -52,7 +52,7 @@ $tipos = $tipoModel->getAll();
                         <th>PP</th>
                         <th>Produto</th>
                         <th>Status</th>
-                        <th>série</th>
+                        <th>Série</th>
                         <th>Data de venda</th>
                         <th>Cliente</th>
                         <th>Garantia</th>
@@ -90,7 +90,11 @@ $tipos = $tipoModel->getAll();
                             </td>
                             <td><?= $product['serial_number'] ?></td>
                             <td>
-                                <?php if ($product['sale_date']): ?>
+                                <?php 
+                                    $isEstoque = (isset($product['client_name']) && $product['client_name'] === 'Em Estoque') 
+                                                 || (isset($product['destination']) && $product['destination'] === 'estoque');
+                                ?>
+                                <?php if (!$isEstoque && !empty($product['sale_date'])): ?>
                                     <?= (new DateTime($product['sale_date']))->format('d/m/Y') ?>
                                 <?php else: ?>
                                     -
@@ -98,13 +102,7 @@ $tipos = $tipoModel->getAll();
                             </td>
                             <td>
                                 <?php if ($product['client_name'] && $product['client_name'] !== 'Em Estoque'): ?>
-                                    <?= $product['client_name'] ?>
-                                    <?php if (!empty($product['client_city']) && !empty($product['client_state'])): ?>
-                                        <br>
-                                        <small class="text-muted">
-                                            <?= $product['client_city'] ?>/<?= $product['client_state'] ?>
-                                        </small>
-                                    <?php endif; ?>
+                                    <?= $product['client_city'] ?>/<?= $product['client_state'] ?>
                                 <?php else: ?>
                                     <span class="text-muted">Em Estoque</span>
                                 <?php endif; ?>

@@ -148,53 +148,14 @@ $(document).ready(function () {
     });
   });
 
-  // Manipulador para imprimir QR Code
+  // Manipulador para imprimir etiqueta (individual) na página principal
   $(".print-qrcode").on("click", function () {
     const id = $(this).data("id");
-    const qrCodePath = "public/qrcodes/" + id + ".png";
-
-    Swal.fire({
-      title: "QR Code",
-      imageUrl: qrCodePath,
-      imageWidth: 200,
-      imageHeight: 200,
-      showCloseButton: true,
-      showCancelButton: true,
-      confirmButtonText: '<i class="fas fa-print me-2"></i>Imprimir',
-      cancelButtonText: '<i class="fas fa-times me-2"></i>Fechar',
-      reverseButtons: true,
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const printWindow = window.open();
-        printWindow.document.write(`
-          <html>
-            <head>
-              <title>QR Code</title>
-              <style>
-                body {
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                  height: 100vh;
-                  margin: 0;
-                }
-                img {
-                  width: 2cm;
-                  height: 2cm;
-                }
-              </style>
-            </head>
-            <body>
-              <img src="${qrCodePath}" />
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      }
-    });
+    if (!id) return;
+    window.open(
+      `src/controllers/LabelController.php?id=${encodeURIComponent(id)}`,
+      "_blank"
+    );
   });
 
   // Fechar modal ao clicar no botão de fechar

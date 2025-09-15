@@ -41,11 +41,9 @@ $orders = $poModel->getAll();
                                 </span>
                             </td>
                             <td>
-                                <?= $order['client_name'] ?>
-                                <br>
-                                <small class="text-muted">
+                                <span class="text-dark fw-semibold">
                                     <?= $order['client_city'] ?>/<?= $order['client_state'] ?>
-                                </small>
+                                </span>
                             </td>
                             <td><?= (new DateTime($order['order_date']))->format('d/m/Y') ?></td>
                             <td class="text-center">
@@ -54,8 +52,8 @@ $orders = $poModel->getAll();
                                         data-order="<?= htmlspecialchars($order['order_number']) ?>"
                                         title="Ver Produtos">
                                     <span class="position-relative">
-                                        <i class="fas fa-box-open fs-5"></i>
-                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                                        <i class="fas fa-box-open fs-6"></i>
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary products-badge">
                                             <?= $order['total_products'] ?>
                                         </span>
                                     </span>
@@ -64,7 +62,7 @@ $orders = $poModel->getAll();
                             <td>
                                 <select class="form-select form-select-sm status-select" 
                                         data-id="<?= $order['id'] ?>"
-                                        style="width: 140px;">
+                                        style="width: 120px;">
                                     <option value="pending" <?= $order['status'] == 'pending' ? 'selected' : '' ?>>Pendente</option>
                                     <option value="in_production" <?= $order['status'] == 'in_production' ? 'selected' : '' ?>>Em Produção</option>
                                     <option value="completed" <?= $order['status'] == 'completed' ? 'selected' : '' ?>>Concluído</option>
@@ -74,6 +72,12 @@ $orders = $poModel->getAll();
                             <td><?= $order['warranty'] ?></td>
                             <td>
                                 <div class="d-flex justify-content-center align-items-center gap-3">
+                                    <button class="btn btn-link text-dark p-0 edit-order" 
+                                            data-id="<?= $order['id'] ?>" 
+                                            data-order="<?= htmlspecialchars($order['order_number']) ?>"
+                                            title="Editar Pedido">
+                                        <i class="fas fa-pen fs-5"></i>
+                                    </button>
                                     <button class="btn btn-link text-dark p-0 print-all" 
                                             data-id="<?= $order['id'] ?>" 
                                             title="Imprimir QR Codes">
@@ -187,5 +191,30 @@ $orders = $poModel->getAll();
 
 .btn-link:active {
     transform: scale(0.95);
+}
+
+/* Reduzir altura das linhas da tabela */
+#orders-table tbody tr td {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    vertical-align: middle;
+}
+
+/* Afinar o select de status */
+.status-select {
+    border: 1px solid #dee2e6;
+    /* padding direita maior para não cortar o caret do select */
+    padding: 0.12rem 1.2rem 0.12rem 0.4rem;
+    line-height: 1.2;
+    height: auto;           /* deixar o navegador calcular */
+    min-height: 28px;       /* altura mínima enxuta com texto visível */
+    font-size: 0.85rem;     /* texto um pouco menor */
+    border-radius: 0.35rem;
+}
+
+/* Badge menor sobre o ícone de produtos */
+.products-badge {
+    font-size: 0.5rem;
+    padding: 0.1rem 0.25rem;
 }
 </style>

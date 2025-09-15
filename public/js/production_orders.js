@@ -1,4 +1,151 @@
 $(document).ready(function () {
+  // Garantir que backdrops não fiquem presos ao fechar o modal
+  (function setupModalCleanup() {
+    const modalEl = document.getElementById("productsModal");
+    if (modalEl) {
+      modalEl.addEventListener("hidden.bs.modal", function () {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('padding-right');
+      });
+
+  // ==============================
+  // Edição de Pedido
+  // ==============================
+  $(document).on("click", ".edit-order", async function () {
+    const orderId = $(this).data("id");
+    const orderNumber = $(this).data("order");
+    const modalEl = document.getElementById("orderModal");
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+    try {
+      // Carregar dados do pedido
+      const [orderRes, orderProductsRes, availableRes] = await Promise.all([
+        $.get("src/controllers/ProductionOrderController.php", { id: orderId }),
+        $.get("src/controllers/ProductionOrderController.php", { id: orderId, products: true }),
+        $.get("src/controllers/ProductionOrderController.php", { available_products: true }),
+      ]);
+
+      const order = typeof orderRes === "string" ? JSON.parse(orderRes) : orderRes;
+      const orderProducts = typeof orderProductsRes === "string" ? JSON.parse(orderProductsRes) : orderProductsRes;
+      const availableProducts = typeof availableRes === "string" ? JSON.parse(availableRes) : availableRes;
+
+      // Preencher cabeçalho do formulário
+      $("#order_action").val("update_order");
+      $("#order_id").val(orderId);
+      $("#client_id").val(order.client_id);
+      $("#order_date").val(order.order_date);
+      $("#warranty").val(order.warranty);
+      $(".order-modal-title-text").text(`Editar Pedido ${orderNumber}`);
+
+      // Construir UI dos produtos: unir disponíveis + já do pedido
+      const selectedIds = new Set(orderProducts.map((p) => String(p.id)));
+      // Mapear já-do-pedido por id para manter garantias/serial, etc.
+      const existingById = {}; orderProducts.forEach(p => { existingById[String(p.id)] = p; });
+
+      // Unir listas: disponíveis + os que já estão no pedido (podem não estar em available)
+      const union = [...availableProducts];
+      orderProducts.forEach(p => {
+        if (!union.find(u => String(u.id) === String(p.id))) union.push(p);
+      });
+
+      // Agrupar por lote (batch_number), com fallbacks melhores
+      // Regra:
+      // 1) Se tiver batch_number, usar.
+      // 2) Se não tiver batch_number mas tiver production_batch_id, rotular como `Lote <id>` para não cair em "Sem Lote".
+      // 3) Só usar "Sem Lote" se realmente não houver vínculo de lote.
+      const groups = {};
+      const groupHasSelected = {};
+      union.forEach((p) => {
+        let batch = (p.batch_number && String(p.batch_number).trim() !== '')
+          ? p.batch_number
+          : (p.production_batch_id ? `Lote ${p.production_batch_id}` : 'Sem Lote');
+        if (!groups[batch]) groups[batch] = [];
+        groups[batch].push(p);
+        if (selectedIds.has(String(p.id))) groupHasSelected[batch] = true;
+      });
+
+      // Montar HTML
+      let html = '<div id="batches-accordion-edit">';
+      Object.keys(groups)
+        .sort((a, b) => {
+          const sa = groupHasSelected[a] ? 1 : 0;
+          const sb = groupHasSelected[b] ? 1 : 0;
+          if (sa !== sb) return sb - sa; // grupos com selecionados primeiro
+          // empurrar 'Sem Lote' para o final
+          if (a === 'Sem Lote' && b !== 'Sem Lote') return 1;
+          if (b === 'Sem Lote' && a !== 'Sem Lote') return -1;
+          return String(a).localeCompare(String(b), 'pt-BR', {numeric:true, sensitivity:'base'});
+        })
+        .forEach((batch) => {
+        const products = groups[batch].sort((a,b)=> String(a.serial_number).localeCompare(String(b.serial_number)));
+        const collapseId = `batch-edit-${batch.replace(/[^a-zA-Z0-9]/g,'')}`;
+        html += `
+          <div class="batch-group mb-2" data-batch="${batch}">
+            <div class="batch-header p-3 bg-white border-bottom d-flex justify-content-between align-items-center" 
+                 data-bs-toggle="collapse" data-bs-target="#${collapseId}" style="cursor:pointer;">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-chevron-down me-3 batch-chevron text-primary" style="transition: transform 0.2s;"></i>
+                <div>
+                  <h6 class="mb-1 text-primary"><i class="fas fa-layer-group me-2"></i>${batch}</h6>
+                  <small class="text-muted"><span class="batch-count">${products.length}</span> produtos • <span class="batch-selected">0</span> selecionados</small>
+                </div>
+              </div>
+            </div>
+            <div class="collapse show" id="${collapseId}">
+              <div class="batch-products p-2" style="background:#f8f9fa;">
+                <div class="row g-2">
+        `;
+        products.forEach((p) => {
+          const checked = selectedIds.has(String(p.id)) ? "checked" : "";
+          html += `
+            <div class="col-md-6">
+              <div class="product-card p-2 bg-white border rounded shadow-sm h-100" data-type="${(p.tipo_name||'').toLowerCase()}" data-serial="${p.serial_number||''}" data-batch="${batch}">
+                <div class="form-check h-100">
+                  <input class="form-check-input product-select" type="checkbox" value="${p.id}" id="product_edit_${p.id}" name="products[]" ${checked}>
+                  <label class="form-check-label w-100 h-100 d-flex flex-column" for="product_edit_${p.id}">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <div class="d-flex align-items-center">
+                        <i class="fas fa-microchip text-primary me-2"></i>
+                        <strong class="product-type" style="font-size:0.9rem;">${p.tipo_name || ''}</strong>
+                      </div>
+                      <i class="fas ${checked ? 'fa-check-circle' : 'fa-plus-circle'} text-success"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex flex-wrap gap-1 mb-1">
+                        <span class="badge bg-dark" style="font-size:0.7rem;"><i class="fas fa-hashtag me-1"></i>${p.serial_number||''}</span>
+                        <span class="badge bg-warning text-dark" style="font-size:0.7rem;"><i class="fas fa-shield-alt me-1"></i>${p.warranty||''}</span>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        html += `
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+
+      $("#products-container").html(html);
+
+      // Atualizar contadores e estilos já existentes
+      if (typeof updateAllCounts === 'function') updateAllCounts();
+      if (typeof updateProductCardStyles === 'function') updateProductCardStyles();
+
+      modal.show();
+    } catch (e) {
+      console.error(e);
+      Swal.fire({ title: "Erro", text: "Não foi possível carregar o pedido para edição.", icon: "error" });
+    }
+  });
+    }
+  })();
   // Inicialização do DataTable
   if ($.fn.DataTable.isDataTable("#orders-table")) {
     $("#orders-table").DataTable().destroy();
@@ -173,9 +320,9 @@ $(document).ready(function () {
         }
 
         // Inicializar o modal
-        const modal = new bootstrap.Modal(
-          document.getElementById("productsModal")
-        );
+        const el = document.getElementById("productsModal");
+        // Reutiliza ou cria instância única do modal para evitar múltiplos backdrops
+        const modal = bootstrap.Modal.getOrCreateInstance(el);
         modal.show();
       },
     });
@@ -196,14 +343,12 @@ $(document).ready(function () {
       });
       return;
     }
-
-    // Aqui você pode implementar a impressão em lote
-    // Por enquanto, vamos apenas mostrar uma mensagem
-    Swal.fire({
-      title: "Impressão em Lote",
-      text: `Imprimindo ${selectedProducts.length} QR codes...`,
-      icon: "info",
-    });
+    // Abrir página de etiquetas com os IDs selecionados
+    const idsParam = selectedProducts.join(",");
+    window.open(
+      `src/controllers/LabelController.php?ids=${encodeURIComponent(idsParam)}`,
+      "_blank"
+    );
   });
 
   // Imprimir todos os QR codes do pedido (usando delegação de eventos)
@@ -219,14 +364,25 @@ $(document).ready(function () {
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
-        // Implementar impressão em lote
-        Swal.fire({
-          title: "Impressão iniciada!",
-          text: "Os QR codes estão sendo gerados...",
-          icon: "success",
-        });
+        // Abrir página de etiquetas para o pedido completo
+        window.open(
+          `src/controllers/LabelController.php?order_id=${encodeURIComponent(
+            id
+          )}`,
+          "_blank"
+        );
       }
     });
+  });
+
+  // Imprimir etiqueta individual (abrir página de etiqueta)
+  $(document).on("click", ".print-qrcode", function () {
+    const id = $(this).data("id");
+    if (!id) return;
+    window.open(
+      `src/controllers/LabelController.php?id=${encodeURIComponent(id)}`,
+      "_blank"
+    );
   });
 
   // Gerar PDF do pedido (usando delegação de eventos)
