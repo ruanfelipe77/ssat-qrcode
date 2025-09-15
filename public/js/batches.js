@@ -1,4 +1,8 @@
 $(document).ready(function () {
+  // Se não estamos na página de lotes, não registra handlers deste arquivo
+  if (!document.getElementById("batches-table")) {
+    return;
+  }
   // Evitar backdrops presos ao fechar o modal de produtos
   (function setupModalCleanup() {
     const modalEl = document.getElementById("productsModal");

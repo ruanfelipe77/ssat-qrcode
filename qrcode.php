@@ -14,6 +14,27 @@ function getTipoName($tipo_id, $conn) {
   return $row['nome'] ?? 'Tipo Desconhecido';
 }
 
+function formatDestination($conn, $destination) {
+  // Estoque
+  if ($destination === 'estoque' || strtolower($destination) === 'em estoque') {
+    return 'Em Estoque';
+  }
+  // Se for um ID numérico de cliente, buscar cidade/UF
+  if (preg_match('/^\d+$/', (string)$destination)) {
+    $stmt = $conn->prepare('SELECT city, state FROM clients WHERE id = :id');
+    $stmt->execute(['id' => $destination]);
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+      $city = trim($row['city'] ?? '');
+      $state = trim($row['state'] ?? '');
+      if ($city !== '' || $state !== '') {
+        return htmlspecialchars($city . ($state ? '/' . $state : ''));
+      }
+    }
+  }
+  // Caso já seja texto (ex.: "Lages/SC")
+  return htmlspecialchars((string)$destination);
+}
+
 // Obter a conexão com o banco de dados usando a classe Database
 $db = Database::getInstance();
 $conn = $db->getConnection();
@@ -54,6 +75,7 @@ if ($product) {
 }
 
 $tipoName = $display['tipo_id'] !== null ? getTipoName($display['tipo_id'], $conn) : 'Tipo Desconhecido';
+$destinationText = formatDestination($conn, $display['destination']);
 ?>
 
 <!DOCTYPE html>
@@ -99,7 +121,7 @@ $tipoName = $display['tipo_id'] !== null ? getTipoName($display['tipo_id'], $con
           <li><strong>Produto:</strong> <?= htmlspecialchars($tipoName) ?></li>
           <li><strong>Número de Série:</strong> <?= htmlspecialchars($display['serial_number']) ?></li>
           <li><strong>Data da Venda:</strong> <?= $display['sale_date'] ? (new DateTime($display['sale_date']))->format('d/m/Y') : '' ?></li>
-          <li><strong>Destino:</strong> <?= htmlspecialchars($display['destination']) ?></li>
+          <li><strong>Destino:</strong> <?= $destinationText ?></li>
           <li><strong>Garantia:</strong> <?= htmlspecialchars($display['warranty']) ?></li>
         </ul>
       </div>

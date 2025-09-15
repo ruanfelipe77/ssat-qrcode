@@ -8,25 +8,14 @@ class ProductionOrder {
         $this->conn = $db;
     }
 
-    private function generateOrderNumber() {
-        // Novo padrão: mmaaaa/0001 (ex.: 092025/0001)
-        $prefix = date('mY');
-
-        $query = "SELECT order_number FROM " . $this->table_name . " 
-                 WHERE order_number LIKE '" . $prefix . "/%' 
-                 ORDER BY order_number DESC LIMIT 1";
-        
-        $stmt = $this->conn->prepare($query);
+    private function orderNumberExists($orderNumber, $excludeId = null) {
+        $sql = "SELECT id FROM " . $this->table_name . " WHERE order_number = :onum";
+        if ($excludeId) { $sql .= " AND id <> :id"; }
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':onum', $orderNumber);
+        if ($excludeId) { $stmt->bindValue(':id', $excludeId, PDO::PARAM_INT); }
         $stmt->execute();
-        
-        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $lastNumber = intval(substr($row['order_number'], -4));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
-        
-        return $prefix . '/' . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function create($data) {
@@ -44,7 +33,14 @@ class ProductionOrder {
 
             $stmt = $this->conn->prepare($query);
 
-            $order_number = $this->generateOrderNumber();
+            // order_number agora vem do formulário (campo texto)
+            $order_number = trim($data['order_number'] ?? '');
+            if ($order_number === '') {
+                throw new Exception('Número do PP é obrigatório');
+            }
+            if ($this->orderNumberExists($order_number)) {
+                throw new Exception('Já existe um PP com este número');
+            }
             $status = 'pending';
 
             // Sanitize
@@ -224,16 +220,21 @@ class ProductionOrder {
 
             // Atualizar cabeçalho do pedido
             $query = "UPDATE " . $this->table_name . "
-                     SET client_id = :client_id,
+                     SET order_number = :order_number,
+                         client_id = :client_id,
                          order_date = :order_date,
                          warranty = :warranty,
                          notes = :notes
                      WHERE id = :id";
             $stmt = $this->conn->prepare($query);
+            $order_number = trim($data['order_number'] ?? '');
+            if ($order_number === '') { throw new Exception('Número do PP é obrigatório'); }
+            if ($this->orderNumberExists($order_number, $id)) { throw new Exception('Já existe um PP com este número'); }
             $client_id = htmlspecialchars(strip_tags($data['client_id']));
             $order_date = htmlspecialchars(strip_tags($data['order_date']));
             $warranty = htmlspecialchars(strip_tags($data['warranty']));
             $notes = htmlspecialchars(strip_tags($data['notes'] ?? ''));
+            $stmt->bindParam(':order_number', $order_number);
             $stmt->bindParam(':client_id', $client_id);
             $stmt->bindParam(':order_date', $order_date);
             $stmt->bindParam(':warranty', $warranty);

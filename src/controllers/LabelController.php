@@ -12,6 +12,10 @@ $id = isset($_GET['id']) ? trim($_GET['id']) : null;
 $orderId = isset($_GET['order_id']) ? trim($_GET['order_id']) : null;
 $idsParam = isset($_GET['ids']) ? trim($_GET['ids']) : null;
 $dpi = isset($_GET['dpi']) ? max(96, min(600, (int)$_GET['dpi'])) : 300;
+// Offsets e espaçamento (mm) opcionais para ajuste fino na impressão
+$mtMm = isset($_GET['mt_mm']) ? max(0, (float)$_GET['mt_mm']) : 0; // margem/offset superior extra
+$mlMm = isset($_GET['ml_mm']) ? max(0, (float)$_GET['ml_mm']) : 0; // margem/offset esquerdo extra
+$gapMm = isset($_GET['gap_mm']) ? max(0, (float)$_GET['gap_mm']) : 0; // espaçamento entre etiquetas
 
 $db = Database::getInstance()->getConnection();
 $productModel = new Product($db);
@@ -59,12 +63,12 @@ if ($qrPixels < 150) { $qrPixels = 150; }
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    /* Grade de 5 colunas, cada etiqueta 20x20mm, sem espaçamento entre elas */
+    /* Grade de 5 colunas, cada etiqueta 20x20mm, espaçamento configurável */
     .grid {
       display: grid;
       grid-template-columns: repeat(5, 20mm);
       grid-auto-rows: 20mm;
-      gap: 0mm;
+      gap: <?= number_format($gapMm, 2, '.', '') ?>mm;
       width: fit-content;
     }
     /* Cada etiqueta 20x20mm */
@@ -122,7 +126,10 @@ if ($qrPixels < 150) { $qrPixels = 150; }
   if ($total === 0) {
       echo '<div style="padding:12px">Nenhum produto encontrado para impressão.</div>';
   } else {
-      echo '<div class="grid">';
+      $style = '';
+      if ($mtMm > 0) { $style .= 'margin-top:' . number_format($mtMm, 2, '.', '') . 'mm;'; }
+      if ($mlMm > 0) { $style .= 'margin-left:' . number_format($mlMm, 2, '.', '') . 'mm;'; }
+      echo '<div class="grid" style="' . e($style) . '">';
       foreach ($products as $prod) {
           $sid = $prod['id'];
           $serial = $prod['serial_number'] ?? '';

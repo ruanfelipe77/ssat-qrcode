@@ -24,9 +24,8 @@ $availableProducts = $productModel->getAvailableProducts();
                 <form id="orderForm" class="needs-validation" novalidate>
                     <input type="hidden" name="action" id="order_action" value="create_order">
                     <input type="hidden" name="id" id="order_id" value="">
-
                     <div class="row mb-4">
-                        <div class="col-md-6">
+                        <div class="col-md-5">
                             <label for="client_id" class="form-label">Cliente</label>
                             <select class="form-select" name="client_id" id="client_id" required>
                                 <option value="">Selecione um cliente</option>
@@ -47,12 +46,17 @@ $availableProducts = $productModel->getAvailableProducts();
                                 Por favor, informe a data do pedido.
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="warranty" class="form-label">Garantia</label>
                             <input type="text" class="form-control" id="warranty" name="warranty" required>
                             <div class="invalid-feedback">
                                 Por favor, informe a garantia.
                             </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="order_number" class="form-label">Número do Pedido</label>
+                            <input type="text" class="form-control" id="order_number" name="order_number" placeholder="Informe o número do PP" required>
+                            <div class="invalid-feedback">Informe o número do PP.</div>
                         </div>
                     </div>
 

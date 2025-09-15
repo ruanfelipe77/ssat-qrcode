@@ -160,17 +160,23 @@ document.addEventListener('DOMContentLoaded', function() {
         form.classList.add('was-validated');
     });
 
-    // Reset form validation when modal is hidden
+    // Reset form validation quando o modal existe e for fechado
     const modal = document.getElementById('mcpModal');
-    modal.addEventListener('hidden.bs.modal', function() {
-        form.classList.remove('was-validated');
-        form.reset();
-    });
+    if (modal) {
+        modal.addEventListener('hidden.bs.modal', function() {
+            form.classList.remove('was-validated');
+            form.reset();
+        });
+    }
 
-    // Update modal title based on action
-    document.getElementById('add-mcp').addEventListener('click', function() {
-        document.querySelector('.modal-title-text').textContent = 'Adicionar Produto';
-    });
+    // Update modal title based on action (quando o botão existir)
+    const addBtn = document.getElementById('add-mcp');
+    if (addBtn) {
+        addBtn.addEventListener('click', function() {
+            const titleEl = document.querySelector('.modal-title-text');
+            if (titleEl) titleEl.textContent = 'Adicionar Produto';
+        });
+    }
 
     document.querySelectorAll('.edit-mcp').forEach(button => {
         button.addEventListener('click', function() {

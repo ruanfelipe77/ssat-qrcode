@@ -33,6 +33,7 @@ $(document).ready(function () {
       // Preencher cabeçalho do formulário
       $("#order_action").val("update_order");
       $("#order_id").val(orderId);
+      $("#order_number").val(order.order_number || "");
       $("#client_id").val(order.client_id);
       $("#order_date").val(order.order_date);
       $("#warranty").val(order.warranty);
@@ -193,6 +194,14 @@ $(document).ready(function () {
 
   // Novo Pedido
   $("#add-order").on("click", function () {
+    // Reset campos do formulário, inclusive número do PP
+    $("#order_action").val("create_order");
+    $("#order_id").val("");
+    $("#order_number").val("");
+    $("#client_id").val("");
+    $("#order_date").val("");
+    $("#warranty").val("");
+    $(".order-modal-title-text").text("Novo Pedido");
     const modal = new bootstrap.Modal(document.getElementById("orderModal"));
     modal.show();
   });
