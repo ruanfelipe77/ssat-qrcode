@@ -19,6 +19,9 @@
         <a href="index.php?page=tipos" class="list-group-item list-group-item-action bg-dark text-white py-3">
             <i class="fas fa-tags me-2"></i> Tipos
         </a>
+        <a href="index.php?page=product_status" class="list-group-item list-group-item-action bg-dark text-white py-3">
+            <i class="fas fa-flag me-2"></i> Status
+        </a>
     </div>
 
     <div class="sidebar-footer mt-auto p-3">

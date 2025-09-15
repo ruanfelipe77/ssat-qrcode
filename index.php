@@ -71,6 +71,9 @@ if (!isset($_SESSION['logado']) || $_SESSION['logado'] !== true) {
                 case 'tipos':
                     include 'src/views/tipo.php';
                     break;
+                case 'product_status':
+                    include 'src/views/product_status.php';
+                    break;
                 default:
                     include 'src/views/batches.php'; // Default page agora é Lotes
             }

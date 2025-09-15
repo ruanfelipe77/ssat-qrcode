@@ -8,6 +8,17 @@ class ProductionBatch {
         $this->conn = $db;
     }
 
+    private function checkIfColumnExists($table, $column) {
+        try {
+            $sql = "SELECT $column FROM $table LIMIT 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return true;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
     private function generateBatchNumber() {
         $monthYear = date('mY'); // Ex: 092025 para setembro de 2025
         
@@ -67,11 +78,20 @@ class ProductionBatch {
 
             $batch_id = $this->conn->lastInsertId();
 
-            // Criar produtos em lote
-            $query = "INSERT INTO products 
-                    (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date)
-                    VALUES 
-                    (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW())";
+            // Verificar se status_id existe na tabela products
+            $hasStatusColumn = $this->checkIfColumnExists('products', 'status_id');
+            
+            if ($hasStatusColumn) {
+                $query = "INSERT INTO products 
+                        (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, status_id)
+                        VALUES 
+                        (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW(), :status_id)";
+            } else {
+                $query = "INSERT INTO products 
+                        (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date)
+                        VALUES 
+                        (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW())";
+            }
             
             $stmt = $this->conn->prepare($query);
 
@@ -86,6 +106,11 @@ class ProductionBatch {
                 $stmt->bindParam(":serial_number", $serial_number);
                 $stmt->bindParam(":production_batch_id", $batch_id);
                 $stmt->bindParam(":warranty", $data['warranty']);
+                
+                if ($hasStatusColumn) {
+                    $status_id = $data['status_id'] ?? 1; // Default para "em_estoque"
+                    $stmt->bindParam(":status_id", $status_id);
+                }
 
                 if(!$stmt->execute()) {
                     throw new Exception("Erro ao criar produto #" . $serial_number);

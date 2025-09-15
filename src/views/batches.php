@@ -2,6 +2,7 @@
 require 'database.php';
 require 'src/models/ProductionBatch.php';
 require 'src/models/Tipo.php';
+require 'src/models/ProductStatus.php';
 
 $database = Database::getInstance();
 $db = $database->getConnection();
@@ -11,6 +12,9 @@ $batches = $batchModel->getAll();
 
 $tipoModel = new Tipo($db);
 $tipos = $tipoModel->getAll();
+
+$statusModel = new ProductStatus($db);
+$statuses = $statusModel->getActive();
 ?>
 
 <div class="container-fluid p-4">
@@ -168,7 +172,24 @@ $tipos = $tipoModel->getAll();
                     </div>
 
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label for="status_id" class="form-label">Status Padrão</label>
+                            <select class="form-select" name="status_id" id="status_id" required>
+                                <option value="">Selecione um status</option>
+                                <?php foreach ($statuses as $status) : ?>
+                                    <option value="<?= $status['id'] ?>" 
+                                            data-color="<?= $status['color'] ?>" 
+                                            data-icon="<?= $status['icon'] ?>"
+                                            <?= $status['name'] === 'em_estoque' ? 'selected' : '' ?>>
+                                        <?= ucfirst(str_replace('_', ' ', $status['name'])) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="invalid-feedback">
+                                Por favor, selecione um status.
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <label for="warranty" class="form-label">Garantia Padrão</label>
                             <input type="text" class="form-control" id="warranty" name="warranty" required 
                                    placeholder="ex: 12 meses, 2 anos">
@@ -176,7 +197,7 @@ $tipos = $tipoModel->getAll();
                                 Por favor, informe a garantia padrão.
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="notes" class="form-label">Observações</label>
                             <textarea class="form-control" id="notes" name="notes" rows="2" 
                                       placeholder="Observações opcionais sobre o lote"></textarea>

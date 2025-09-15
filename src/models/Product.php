@@ -26,10 +26,11 @@ class Product
             // Verifica se as colunas existem
             $hasBatchColumn = $this->checkIfColumnExists('products', 'production_batch_id');
             $hasOrderColumn = $this->checkIfColumnExists('products', 'production_order_id');
+            $hasStatusColumn = $this->checkIfColumnExists('products', 'status_id');
             
             
-            if ($hasBatchColumn && $hasOrderColumn) {
-                // Versão completa com lotes e pedidos
+            if ($hasBatchColumn && $hasOrderColumn && $hasStatusColumn) {
+                // Versão completa com lotes, pedidos e status
                 $sql = "SELECT p.id, 
                                p.serial_number, 
                                p.sale_date, 
@@ -39,6 +40,9 @@ class Product
                                COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
                                COALESCE(pb.batch_number, 'Sem Lote') as batch_number,
                                COALESCE(so.order_number, '') AS pp_number,
+                               COALESCE(ps.name, 'em_estoque') as status_name,
+                               COALESCE(ps.color, '#198754') as status_color,
+                               COALESCE(ps.icon, 'fas fa-warehouse') as status_icon,
                                CASE 
                                    WHEN p.destination = 'estoque' THEN 'Em Estoque'
                                    WHEN c.name IS NOT NULL THEN c.name
@@ -51,6 +55,7 @@ class Product
                         LEFT JOIN tipos t ON p.tipo_id = t.id
                         LEFT JOIN production_batches pb ON p.production_batch_id = pb.id
                         LEFT JOIN sales_orders so ON p.production_order_id = so.id
+                        LEFT JOIN product_status ps ON p.status_id = ps.id
                         LEFT JOIN clients c ON (p.destination REGEXP '^[0-9]+$' AND p.destination = c.id)
                         ORDER BY p.id DESC";
             } else {
@@ -63,6 +68,9 @@ class Product
                                COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
                                'Sem Lote' as batch_number,
                                '' AS pp_number,
+                               'em_estoque' as status_name,
+                               '#198754' as status_color,
+                               'fas fa-warehouse' as status_icon,
                                CASE 
                                    WHEN p.destination = 'estoque' THEN 'Em Estoque'
                                    WHEN c.name IS NOT NULL THEN c.name
@@ -128,27 +136,58 @@ class Product
 
     public function create($data)
     {
-        $stmt = $this->conn->prepare('INSERT INTO products (serial_number, sale_date, destination, warranty, tipo_id) VALUES (:serial_number, :sale_date, :destination, :warranty, :tipo_id)');
-        return $stmt->execute([
-            'serial_number' => $data['serial_number'],
-            'sale_date' => $data['sale_date'],
-            'destination' => $data['destination'],
-            'warranty' => $data['warranty'],
-            'tipo_id' => $data['tipo_id']
-        ]);
+        // Verificar se status_id existe na tabela
+        $hasStatusColumn = $this->checkIfColumnExists('products', 'status_id');
+        
+        if ($hasStatusColumn) {
+            $stmt = $this->conn->prepare('INSERT INTO products (serial_number, sale_date, destination, warranty, tipo_id, status_id) VALUES (:serial_number, :sale_date, :destination, :warranty, :tipo_id, :status_id)');
+            return $stmt->execute([
+                'serial_number' => $data['serial_number'],
+                'sale_date' => $data['sale_date'],
+                'destination' => $data['destination'],
+                'warranty' => $data['warranty'],
+                'tipo_id' => $data['tipo_id'],
+                'status_id' => $data['status_id'] ?? 1 // Default para "em_estoque"
+            ]);
+        } else {
+            $stmt = $this->conn->prepare('INSERT INTO products (serial_number, sale_date, destination, warranty, tipo_id) VALUES (:serial_number, :sale_date, :destination, :warranty, :tipo_id)');
+            return $stmt->execute([
+                'serial_number' => $data['serial_number'],
+                'sale_date' => $data['sale_date'],
+                'destination' => $data['destination'],
+                'warranty' => $data['warranty'],
+                'tipo_id' => $data['tipo_id']
+            ]);
+        }
     }
 
     public function update($data)
     {
-        $stmt = $this->conn->prepare('UPDATE products SET serial_number = :serial_number, sale_date = :sale_date, destination = :destination, warranty = :warranty, tipo_id = :tipo_id WHERE id = :id');
-        return $stmt->execute([
-            'id' => $data['id'],
-            'serial_number' => $data['serial_number'],
-            'sale_date' => $data['sale_date'],
-            'destination' => $data['destination'],
-            'warranty' => $data['warranty'],
-            'tipo_id' => $data['tipo_id']
-        ]);
+        // Verificar se status_id existe na tabela
+        $hasStatusColumn = $this->checkIfColumnExists('products', 'status_id');
+        
+        if ($hasStatusColumn) {
+            $stmt = $this->conn->prepare('UPDATE products SET serial_number = :serial_number, sale_date = :sale_date, destination = :destination, warranty = :warranty, tipo_id = :tipo_id, status_id = :status_id WHERE id = :id');
+            return $stmt->execute([
+                'id' => $data['id'],
+                'serial_number' => $data['serial_number'],
+                'sale_date' => $data['sale_date'],
+                'destination' => $data['destination'],
+                'warranty' => $data['warranty'],
+                'tipo_id' => $data['tipo_id'],
+                'status_id' => $data['status_id'] ?? 1 // Default para "em_estoque"
+            ]);
+        } else {
+            $stmt = $this->conn->prepare('UPDATE products SET serial_number = :serial_number, sale_date = :sale_date, destination = :destination, warranty = :warranty, tipo_id = :tipo_id WHERE id = :id');
+            return $stmt->execute([
+                'id' => $data['id'],
+                'serial_number' => $data['serial_number'],
+                'sale_date' => $data['sale_date'],
+                'destination' => $data['destination'],
+                'warranty' => $data['warranty'],
+                'tipo_id' => $data['tipo_id']
+            ]);
+        }
     }
 
     public function delete($id)

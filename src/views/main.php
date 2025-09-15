@@ -18,13 +18,23 @@ $tipos = $tipoModel->getAll();
         <h2 class="mb-0">Lista de Produtos</h2>
         <div class="d-flex gap-2">
             <div class="btn-group">
-                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" id="statusFilterBtn">
                     <i class="fas fa-filter me-2"></i>Status
                 </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item active" href="#">Todos</a></li>
-                    <li><a class="dropdown-item" href="#">Em Estoque</a></li>
-                    <li><a class="dropdown-item" href="#">Vendidos</a></li>
+                <ul class="dropdown-menu" id="statusFilter">
+                    <li><a class="dropdown-item active" href="#" data-status="">Todos</a></li>
+                    <?php 
+                    require_once 'src/models/ProductStatus.php';
+                    $statusModel = new ProductStatus($db);
+                    $allStatuses = $statusModel->getActive();
+                    foreach ($allStatuses as $status) : ?>
+                        <li>
+                            <a class="dropdown-item" href="#" data-status="<?= $status['name'] ?>">
+                                <i class="<?= $status['icon'] ?> me-2" style="color: <?= $status['color'] ?>"></i>
+                                <?= ucfirst(str_replace('_', ' ', $status['name'])) ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
                 </ul>
             </div>
             <button class="btn btn-primary" id="add-mcp">
@@ -41,7 +51,8 @@ $tipos = $tipoModel->getAll();
                         <th>Lote</th>
                         <th>PP</th>
                         <th>Produto</th>
-                        <th>Número de série</th>
+                        <th>Status</th>
+                        <th>série</th>
                         <th>Data de venda</th>
                         <th>Cliente</th>
                         <th>Garantia</th>
@@ -70,6 +81,13 @@ $tipos = $tipoModel->getAll();
                                 <?php endif; ?>
                             </td>
                             <td><?= $product['tipo_name'] ?></td>
+                            <td>
+                                <span class="badge d-flex align-items-center" 
+                                      style="background-color: <?= $product['status_color'] ?>; width: fit-content;">
+                                    <i class="<?= $product['status_icon'] ?> me-2"></i>
+                                    <?= ucfirst(str_replace('_', ' ', $product['status_name'])) ?>
+                                </span>
+                            </td>
                             <td><?= $product['serial_number'] ?></td>
                             <td>
                                 <?php if ($product['sale_date']): ?>
@@ -194,20 +212,24 @@ var table = $('#mcp-table').DataTable({
     destroy: true
 });
 
-// Filtros
-$('.dropdown-item').on('click', function(e) {
+// Filtros por Status
+$('#statusFilter .dropdown-item').on('click', function(e) {
     e.preventDefault();
-    $('.dropdown-item').removeClass('active');
+    $('#statusFilter .dropdown-item').removeClass('active');
     $(this).addClass('active');
     
-    const filter = $(this).text().trim();
+    const status = $(this).data('status');
+    const statusText = $(this).text().trim();
     
-    if (filter === 'Todos') {
-        table.column(1).search('').draw();
-    } else if (filter === 'Em Estoque') {
-        table.column(1).search('Em Estoque').draw();
-    } else if (filter === 'Vendidos') {
-        table.column(1).search('^(?!.*Em Estoque).*$', true).draw();
+    // Atualizar texto do botão
+    $('#statusFilterBtn').html('<i class="fas fa-filter me-2"></i>' + statusText);
+    
+    if (status === '') {
+        // Mostrar todos
+        table.column(3).search('').draw(); // Coluna 3 = Status
+    } else {
+        // Filtrar por status específico
+        table.column(3).search(status, false, true).draw();
     }
 });
 </script>

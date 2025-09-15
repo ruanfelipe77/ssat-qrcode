@@ -8,9 +8,14 @@ $batchModel = new ProductionBatch(Database::getInstance()->getConnection());
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
+    // Debug log
+    error_log("BatchController POST - Action: " . $action);
+    error_log("BatchController POST - Data: " . print_r($_POST, true));
+    
     switch($action) {
         case 'create_batch':
             $result = $batchModel->create($_POST);
+            error_log("BatchController create_batch result: " . print_r($result, true));
             echo json_encode($result);
             break;
 

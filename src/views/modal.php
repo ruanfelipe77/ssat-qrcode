@@ -1,7 +1,12 @@
 <?php
 require_once 'src/models/Client.php';
+require_once 'src/models/ProductStatus.php';
+
 $clientModel = new Client(Database::getInstance()->getConnection());
 $clients = $clientModel->getAll();
+
+$statusModel = new ProductStatus(Database::getInstance()->getConnection());
+$statuses = $statusModel->getActive();
 ?>
 <!-- Modal -->
 <div class="modal fade" id="mcpModal" tabindex="-1" aria-labelledby="mcpModalLabel" aria-hidden="true">
@@ -71,6 +76,23 @@ $clients = $clientModel->getAll();
                         <input type="text" class="form-control" id="warranty" name="warranty" required>
                         <div class="invalid-feedback">
                             Por favor, informe a garantia.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="status_id" class="form-label">Status</label>
+                        <select class="form-select" name="status_id" id="status_id" required>
+                            <option value="">Selecione um status</option>
+                            <?php foreach ($statuses as $status) : ?>
+                                <option value="<?= $status['id'] ?>" 
+                                        data-color="<?= $status['color'] ?>" 
+                                        data-icon="<?= $status['icon'] ?>">
+                                    <?= ucfirst(str_replace('_', ' ', $status['name'])) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="invalid-feedback">
+                            Por favor, selecione um status.
                         </div>
                     </div>
 

@@ -39,6 +39,7 @@ $(document).ready(function () {
         $("#destination").val(mcp.destination);
         $("#warranty").val(mcp.warranty);
         $("#tipo_id").val(mcp.tipo_id);
+        $("#status_id").val(mcp.status_id || 1);
 
         const modal = new bootstrap.Modal(document.getElementById("mcpModal"));
         modal.show();

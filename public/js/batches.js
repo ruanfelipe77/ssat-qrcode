@@ -55,8 +55,18 @@ $(document).ready(function () {
   $("#add-batch").on("click", function () {
     // Atualizar preview do número do lote
     updateBatchPreview();
-    const modal = new bootstrap.Modal(document.getElementById("batchModal"));
-    modal.show();
+    const modalElement = document.getElementById("batchModal");
+    if (modalElement) {
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+    } else {
+      console.error("Modal batchModal não encontrado");
+      Swal.fire({
+        title: "Erro!",
+        text: "Modal não encontrado. Recarregue a página.",
+        icon: "error",
+      });
+    }
   });
 
   // Função para atualizar o preview do número do lote
@@ -121,24 +131,33 @@ $(document).ready(function () {
           url: "src/controllers/BatchController.php",
           data: formData,
           success: function (response) {
-            const res = JSON.parse(response);
-            if (res.success) {
-              const modal = bootstrap.Modal.getInstance(
-                document.getElementById("batchModal")
-              );
-              modal.hide();
+            try {
+              const res = JSON.parse(response);
+              if (res.success) {
+                const modal = bootstrap.Modal.getInstance(
+                  document.getElementById("batchModal")
+                );
+                modal.hide();
 
-              Swal.fire({
-                title: "Sucesso!",
-                text: `Lote ${res.batch_number} criado com sucesso!`,
-                icon: "success",
-              }).then(() => {
-                location.reload();
-              });
-            } else {
+                Swal.fire({
+                  title: "Sucesso!",
+                  text: `Lote ${res.batch_number} criado com sucesso!`,
+                  icon: "success",
+                }).then(() => {
+                  location.reload();
+                });
+              } else {
+                Swal.fire({
+                  title: "Erro!",
+                  text: res.message || "Erro ao criar lote",
+                  icon: "error",
+                });
+              }
+            } catch (e) {
+              console.error("Erro ao processar resposta:", response);
               Swal.fire({
                 title: "Erro!",
-                text: res.message || "Erro ao criar lote",
+                text: "Erro ao processar resposta do servidor",
                 icon: "error",
               });
             }
@@ -172,18 +191,19 @@ $(document).ready(function () {
         products: true,
       },
       success: function (response) {
-        const products = JSON.parse(response);
-        let html = "";
+        try {
+          const products = JSON.parse(response);
+          let html = "";
 
-        if (products.length > 0) {
-          $(".total-products").text(products.length);
-          $(".available-products").text(
-            products.filter((p) => !p.production_order_id).length
-          );
+          if (products.length > 0) {
+            $(".total-products").text(products.length);
+            $(".available-products").text(
+              products.filter((p) => !p.production_order_id).length
+            );
 
-          products.forEach((product) => {
-            const isAvailable = !product.production_order_id;
-            html += `
+            products.forEach((product) => {
+              const isAvailable = !product.production_order_id;
+              html += `
                             <div class="product-card p-3 mb-3 border rounded">
                                 <div class="d-flex align-items-center">
                                     <div class="product-icon me-3">
@@ -236,31 +256,41 @@ $(document).ready(function () {
                                 </div>
                             </div>
                         `;
-          });
-        } else {
-          html = `
+            });
+          } else {
+            html = `
                         <div class="text-center text-muted py-5">
                             <i class="fas fa-box-open mb-3" style="font-size: 3rem;"></i>
                             <h5>Nenhum produto encontrado</h5>
                             <p class="mb-0">Este lote ainda não possui produtos cadastrados.</p>
                         </div>
                     `;
+          }
+
+          $(".products-list").html(html);
+
+          // Mostrar botão de impressão em lote se houver produtos
+          if (products.length > 0) {
+            $(".print-selected").removeClass("d-none");
+          } else {
+            $(".print-selected").addClass("d-none");
+          }
+
+          // Inicializar o modal
+          const modal = new bootstrap.Modal(
+            document.getElementById("productsModal")
+          );
+          modal.show();
+        } catch (e) {
+          console.error("Erro ao processar produtos:", response);
+          $(".products-list").html(`
+            <div class="text-center text-danger py-5">
+              <i class="fas fa-exclamation-triangle mb-3" style="font-size: 3rem;"></i>
+              <h5>Erro ao carregar produtos</h5>
+              <p class="mb-0">Não foi possível carregar os produtos deste lote.</p>
+            </div>
+          `);
         }
-
-        $(".products-list").html(html);
-
-        // Mostrar botão de impressão em lote se houver produtos
-        if (products.length > 0) {
-          $(".print-selected").removeClass("d-none");
-        } else {
-          $(".print-selected").addClass("d-none");
-        }
-
-        // Inicializar o modal
-        const modal = new bootstrap.Modal(
-          document.getElementById("productsModal")
-        );
-        modal.show();
       },
     });
   });
@@ -375,11 +405,12 @@ $(document).ready(function () {
             id: id,
           },
           success: function (response) {
-            const res = JSON.parse(response);
-            if (res.success) {
-              Swal.fire({
-                title: "✅ Sucesso!",
-                html: `
+            try {
+              const res = JSON.parse(response);
+              if (res.success) {
+                Swal.fire({
+                  title: "✅ Sucesso!",
+                  html: `
                                     <div class="text-center">
                                         <p class="mb-3">Lote <strong>${batchNumber}</strong> excluído com sucesso!</p>
                                         <div class="d-flex justify-content-center gap-3">
@@ -397,15 +428,23 @@ $(document).ready(function () {
                                         </div>
                                     </div>
                                 `,
-                icon: "success",
-                confirmButtonText: "OK",
-              }).then(() => {
-                location.reload();
-              });
-            } else {
+                  icon: "success",
+                  confirmButtonText: "OK",
+                }).then(() => {
+                  location.reload();
+                });
+              } else {
+                Swal.fire({
+                  title: "❌ Erro!",
+                  text: res.message || "Erro ao excluir lote",
+                  icon: "error",
+                });
+              }
+            } catch (e) {
+              console.error("Erro ao processar resposta:", response);
               Swal.fire({
                 title: "❌ Erro!",
-                text: res.message || "Erro ao excluir lote",
+                text: "Erro ao processar resposta do servidor",
                 icon: "error",
               });
             }
