@@ -37,9 +37,6 @@ $tipos = $tipoModel->getAll();
                     <?php endforeach; ?>
                 </ul>
             </div>
-            <button class="btn btn-primary" id="add-mcp">
-                <i class="fas fa-plus me-2"></i>Novo Produto
-            </button>
         </div>
     </div>
 
@@ -49,7 +46,7 @@ $tipos = $tipoModel->getAll();
                 <thead>
                     <tr>
                         <th>Lote</th>
-                        <th>PP</th>
+                        <th>Pedido</th>
                         <th>Produto</th>
                         <th>Status</th>
                         <th>Série</th>

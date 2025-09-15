@@ -23,7 +23,7 @@ $orders = $poModel->getAll();
             <table id="orders-table" class="table table-striped table-hover" style="width:100%">
                 <thead>
                     <tr>
-                        <th>PP</th>
+                        <th>Pedido</th>
                         <th>Cliente</th>
                         <th>Data</th>
                         <th>Produtos</th>

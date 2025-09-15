@@ -72,11 +72,8 @@ $statuses = $statusModel->getActive();
                     </div>
 
                     <div class="mb-3">
-                        <label for="warranty" class="form-label">Garantia</label>
-                        <input type="text" class="form-control" id="warranty" name="warranty" required>
-                        <div class="invalid-feedback">
-                            Por favor, informe a garantia.
-                        </div>
+                        <label for="warranty" class="form-label">Garantia (opcional)</label>
+                        <input type="text" class="form-control" id="warranty" name="warranty">
                     </div>
 
                     <div class="mb-3">
