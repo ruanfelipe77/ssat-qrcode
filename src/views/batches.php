@@ -32,6 +32,7 @@ $statuses = $statusModel->getActive();
                     <tr>
                         <th>Lote</th>
                         <th>Data Produção</th>
+                        <th>Produto</th>
                         <th>Total Produtos</th>
                         <th>Disponíveis</th>
                         <th>Observações</th>
@@ -47,6 +48,9 @@ $statuses = $statusModel->getActive();
                                 </span>
                             </td>
                             <td><?= (new DateTime($batch['production_date']))->format('d/m/Y') ?></td>
+                            <td>
+                                <span class="text-dark fw-semibold"><?= htmlspecialchars($batch['tipo_name']) ?></span>
+                            </td>
                             <td class="text-center">
                                 <span class="badge bg-primary">
                                     <?= $batch['total_products'] ?>

@@ -165,9 +165,11 @@ class ProductionBatch {
         try {
             $query = "SELECT b.*, 
                             COUNT(p.id) as total_products,
-                            COUNT(CASE WHEN p.production_order_id IS NULL THEN 1 END) as available_products
+                            COUNT(CASE WHEN p.production_order_id IS NULL THEN 1 END) as available_products,
+                            COALESCE(MIN(t.nome), 'Sem Tipo') AS tipo_name
                      FROM " . $this->table_name . " b
                      LEFT JOIN products p ON p.production_batch_id = b.id
+                     LEFT JOIN tipos t ON p.tipo_id = t.id
                      GROUP BY b.id
                      ORDER BY b.id DESC";
 
