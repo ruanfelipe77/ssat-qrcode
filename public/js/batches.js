@@ -19,6 +19,41 @@ $(document).ready(function () {
     $("#batches-table").DataTable().destroy();
   }
 
+  // Helper: atualizar serial_start (readonly) e preview
+  function setSerialStart(val) {
+    $("#serial_start").val(val);
+    updateSerialPreview();
+  }
+
+  // Buscar do servidor o próximo serial de início para o tipo selecionado
+  function fetchNextSerialStart() {
+    const tipoId = $("#tipo_id").val();
+    if (!tipoId) { setSerialStart(""); return; }
+    $.ajax({
+      type: 'GET',
+      url: 'src/controllers/BatchController.php',
+      data: { action: 'get_next_serial_start', tipo_id: tipoId },
+      success: function (response) {
+        try {
+          const res = typeof response === 'string' ? JSON.parse(response) : response;
+          if (res && res.success) {
+            setSerialStart(res.next_start || 1);
+          } else {
+            setSerialStart(1);
+          }
+        } catch (e) {
+          setSerialStart(1);
+        }
+      },
+      error: function () { setSerialStart(1); }
+    });
+  }
+
+  // Ao mudar o tipo, buscar novo número inicial automático
+  $(document).on('change', '#tipo_id', function(){
+    fetchNextSerialStart();
+  });
+
   var table = $("#batches-table").DataTable({
     destroy: true,
     pagingType: "full_numbers",
@@ -73,6 +108,12 @@ $(document).ready(function () {
     const modalElement = document.getElementById("batchModal");
     if (modalElement) {
       const modal = new bootstrap.Modal(modalElement);
+      // resetar campos do range
+      $("#serial_start").val("").prop('readonly', true);
+      $("#quantity").val("");
+      $("#serial_preview").val("");
+      // buscar número inicial quando escolher o tipo (ou já se tiver selecionado)
+      fetchNextSerialStart();
       modal.show();
     } else {
       console.error("Modal batchModal não encontrado");

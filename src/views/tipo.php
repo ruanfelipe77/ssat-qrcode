@@ -51,6 +51,93 @@ $tipos = $TipoModel->getAll();
 </div>
 
 <script>
+// Abertura do modal para NOVO tipo
+$(document).on('click', '#add-produto', function () {
+    const form = $('#tipoForm');
+    form.removeClass('was-validated');
+    form[0].reset();
+    $('#action_tipo').val('add');
+    $('#id').val('');
+    $('.modal-title-text').text('Adicionar Tipo de Produto');
+    $('.btn-acao').html('<i class="fas fa-save me-2"></i>Salvar');
+    const modal = new bootstrap.Modal(document.getElementById('tipoModal'));
+    modal.show();
+});
+
+// Abrir modal para EDITAR tipo
+$(document).on('click', '.edit-tipo', function () {
+    const id = $(this).data('id');
+    $.get('src/controllers/TipoController.php', { id }, function (resp) {
+        const tipo = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+        const form = $('#tipoForm');
+        form.removeClass('was-validated');
+        form[0].reset();
+        $('#action_tipo').val('edit');
+        $('#id').val(tipo.id);
+        $('#nome').val(tipo.nome);
+        $('.modal-title-text').text('Editar Tipo de Produto');
+        $('.btn-acao').html('<i class="fas fa-save me-2"></i>Atualizar');
+        const modal = new bootstrap.Modal(document.getElementById('tipoModal'));
+        modal.show();
+    }).fail(function(){
+        Swal.fire({ title: 'Erro', text: 'Não foi possível carregar o tipo.', icon: 'error' });
+    });
+});
+
+// Submissão do formulário (ADD/EDIT)
+$(document).on('submit', '#tipoForm', function (e) {
+    e.preventDefault();
+    const form = this;
+    if (!form.checkValidity()) {
+        e.stopPropagation();
+        form.classList.add('was-validated');
+        return;
+    }
+    const data = $(form).serialize();
+    $.post('src/controllers/TipoController.php', data, function (resp) {
+        const res = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+        if (res.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('tipoModal'));
+            if (modal) modal.hide();
+            Swal.fire({ title: 'Sucesso', text: 'Registro salvo com sucesso!', icon: 'success' })
+                .then(() => location.reload());
+        } else {
+            Swal.fire({ title: 'Erro', text: res.message || 'Falha ao salvar.', icon: 'error' });
+        }
+    }).fail(function(){
+        Swal.fire({ title: 'Erro', text: 'Falha na comunicação com o servidor.', icon: 'error' });
+    });
+});
+
+// Deleção
+$(document).on('click', '.delete-tipo', function () {
+    const id = $(this).data('id');
+    Swal.fire({
+        title: 'Confirmar exclusão',
+        text: 'Esta ação não poderá ser desfeita.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fas fa-trash me-2"></i>Excluir',
+        cancelButtonText: '<i class="fas fa-times me-2"></i>Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.post('src/controllers/TipoController.php', { action_tipo: 'delete', id }, function (resp) {
+                const res = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+                if (res.success) {
+                    Swal.fire({ title: 'Excluído', text: 'Tipo excluído com sucesso.', icon: 'success' })
+                        .then(() => location.reload());
+                } else {
+                    Swal.fire({ title: 'Erro', text: res.message || 'Falha ao excluir.', icon: 'error' });
+                }
+            }).fail(function(){
+                Swal.fire({ title: 'Erro', text: 'Falha na comunicação com o servidor.', icon: 'error' });
+            });
+        }
+    });
+});
+
 // Remova qualquer inicialização anterior do DataTable
 var existingTable = $('#tipos-table').DataTable();
 if (existingTable) {

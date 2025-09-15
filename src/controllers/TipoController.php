@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     } elseif ($action === 'add') {
         $success = $tipoModel->create($_POST);
-        echo json_encode(['success' => false]);
+        echo json_encode(['success' => $success]);
         exit;
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {

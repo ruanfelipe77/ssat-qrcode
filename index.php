@@ -74,6 +74,9 @@ if (!isset($_SESSION['logado']) || $_SESSION['logado'] !== true) {
                 case 'product_status':
                     include 'src/views/product_status.php';
                     break;
+                case 'kanban':
+                    include 'src/views/kanban.php';
+                    break;
                 default:
                     include 'src/views/batches.php'; // Default page agora é Lotes
             }

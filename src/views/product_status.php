@@ -27,9 +27,7 @@ $statuses = $statusModel->getAll();
                     <tr>
                         <th>ID</th>
                         <th>Status</th>
-                        <th>Descrição</th>
                         <th>Cor</th>
-                        <th>Ícone</th>
                         <th>Ativo</th>
                         <th style="width: 120px; text-align: center;">Ações</th>
                     </tr>
@@ -39,23 +37,16 @@ $statuses = $statusModel->getAll();
                         <tr>
                             <td><?= $status['id'] ?></td>
                             <td>
-                                <span class="badge d-flex align-items-center" 
-                                      style="background-color: <?= $status['color'] ?>; width: fit-content;">
-                                    <i class="<?= $status['icon'] ?> me-2"></i>
+                                <span class="badge" style="background-color: <?= $status['color'] ?>; width: fit-content;">
                                     <?= ucfirst(str_replace('_', ' ', $status['name'])) ?>
                                 </span>
                             </td>
-                            <td><?= $status['description'] ?></td>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="color-preview me-2" 
                                          style="width: 20px; height: 20px; background-color: <?= $status['color'] ?>; border-radius: 3px; border: 1px solid #dee2e6;"></div>
                                     <code><?= $status['color'] ?></code>
                                 </div>
-                            </td>
-                            <td>
-                                <i class="<?= $status['icon'] ?> me-2"></i>
-                                <code><?= $status['icon'] ?></code>
                             </td>
                             <td>
                                 <?php if ($status['is_active']): ?>

@@ -42,7 +42,6 @@ class Product
                                COALESCE(so.order_number, '') AS pp_number,
                                COALESCE(ps.name, 'em_estoque') as status_name,
                                COALESCE(ps.color, '#198754') as status_color,
-                               COALESCE(ps.icon, 'fas fa-warehouse') as status_icon,
                                CASE 
                                    WHEN p.destination = 'estoque' THEN 'Em Estoque'
                                    WHEN c.name IS NOT NULL THEN c.name
@@ -70,7 +69,6 @@ class Product
                                '' AS pp_number,
                                'em_estoque' as status_name,
                                '#198754' as status_color,
-                               'fas fa-warehouse' as status_icon,
                                CASE 
                                    WHEN p.destination = 'estoque' THEN 'Em Estoque'
                                    WHEN c.name IS NOT NULL THEN c.name

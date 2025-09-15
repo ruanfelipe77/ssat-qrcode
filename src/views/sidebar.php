@@ -13,6 +13,9 @@
         <a href="index.php?page=production_orders" class="list-group-item list-group-item-action bg-dark text-white py-3">
             <i class="fas fa-clipboard-list me-2"></i> Pedidos
         </a>
+        <a href="index.php?page=kanban" class="list-group-item list-group-item-action bg-dark text-white py-3">
+            <i class="fas fa-columns me-2"></i> Kanban
+        </a>
 
         <!-- Cadastros (submenu colapsável) -->
         <a class="list-group-item list-group-item-action bg-dark text-white py-3 d-flex justify-content-between align-items-center"

@@ -49,6 +49,25 @@ class ProductionBatch {
         return $this->generateBatchNumber();
     }
 
+    // Retorna o próximo número inicial de série para um tipo (máximo atual + 1) ou 1 se não houver
+    public function getNextSerialStart($tipoId) {
+        $tipoId = intval($tipoId);
+        if ($tipoId <= 0) { return 1; }
+        try {
+            // Importante: usar CAST para comparar numericamente quando serial_number for VARCHAR
+            $sql = "SELECT MAX(CAST(serial_number AS UNSIGNED)) AS max_serial FROM products WHERE tipo_id = :tipo_id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':tipo_id', $tipoId, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            $max = isset($row['max_serial']) && $row['max_serial'] !== null ? intval($row['max_serial']) : 0;
+            return $max > 0 ? $max + 1 : 1;
+        } catch (PDOException $e) {
+            error_log('getNextSerialStart error: ' . $e->getMessage());
+            return 1;
+        }
+    }
+
     public function create($data) {
         $this->conn->beginTransaction();
 
@@ -96,7 +115,10 @@ class ProductionBatch {
             $stmt = $this->conn->prepare($query);
 
             // Criar produtos com base no range de números de série
-            $start_serial = $data['serial_start'];
+            // Garantir que o número inicial nunca seja menor que o próximo disponível para o tipo
+            $client_start = isset($data['serial_start']) ? intval($data['serial_start']) : 1;
+            $min_start = $this->getNextSerialStart($data['tipo_id']);
+            $start_serial = max($client_start, $min_start);
             $quantity = $data['quantity'];
             
             for($i = 0; $i < $quantity; $i++) {

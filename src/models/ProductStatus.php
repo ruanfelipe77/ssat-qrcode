@@ -11,24 +11,20 @@ class ProductStatus {
     public function create($data) {
         try {
             $query = "INSERT INTO " . $this->table_name . " 
-                      (name, description, color, icon, is_active) 
+                      (name, color, is_active) 
                       VALUES 
-                      (:name, :description, :color, :icon, :is_active)";
+                      (:name, :color, :is_active)";
 
             $stmt = $this->conn->prepare($query);
 
             // Sanitize
             $name = htmlspecialchars(strip_tags($data['name']));
-            $description = htmlspecialchars(strip_tags($data['description'] ?? ''));
             $color = htmlspecialchars(strip_tags($data['color']));
-            $icon = htmlspecialchars(strip_tags($data['icon']));
             $is_active = intval($data['is_active']);
 
             // Bind
             $stmt->bindParam(":name", $name);
-            $stmt->bindParam(":description", $description);
             $stmt->bindParam(":color", $color);
-            $stmt->bindParam(":icon", $icon);
             $stmt->bindParam(":is_active", $is_active);
 
             if($stmt->execute()) {
@@ -47,9 +43,7 @@ class ProductStatus {
         try {
             $query = "UPDATE " . $this->table_name . " 
                       SET name = :name, 
-                          description = :description, 
                           color = :color, 
-                          icon = :icon, 
                           is_active = :is_active 
                       WHERE id = :id";
 
@@ -58,17 +52,13 @@ class ProductStatus {
             // Sanitize
             $id = intval($data['id']);
             $name = htmlspecialchars(strip_tags($data['name']));
-            $description = htmlspecialchars(strip_tags($data['description'] ?? ''));
             $color = htmlspecialchars(strip_tags($data['color']));
-            $icon = htmlspecialchars(strip_tags($data['icon']));
             $is_active = intval($data['is_active']);
 
             // Bind
             $stmt->bindParam(":id", $id);
             $stmt->bindParam(":name", $name);
-            $stmt->bindParam(":description", $description);
             $stmt->bindParam(":color", $color);
-            $stmt->bindParam(":icon", $icon);
             $stmt->bindParam(":is_active", $is_active);
 
             if($stmt->execute()) {
@@ -136,7 +126,6 @@ class ProductStatus {
     public function search($term) {
         $query = "SELECT * FROM " . $this->table_name . " 
                   WHERE name LIKE :term 
-                  OR description LIKE :term 
                   ORDER BY name ASC";
         
         $term = "%{$term}%";

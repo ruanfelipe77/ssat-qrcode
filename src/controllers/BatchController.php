@@ -39,6 +39,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode(['success' => true, 'next_number' => $nextNumber]);
         exit;
     }
+    if ($action === 'get_next_serial_start') {
+        $tipoId = isset($_GET['tipo_id']) ? intval($_GET['tipo_id']) : 0;
+        if ($tipoId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'tipo_id inválido']);
+            exit;
+        }
+        if (method_exists($batchModel, 'getNextSerialStart')) {
+            $next = $batchModel->getNextSerialStart($tipoId);
+            echo json_encode(['success' => true, 'next_start' => $next]);
+            exit;
+        }
+        echo json_encode(['success' => false, 'message' => 'Função indisponível']);
+        exit;
+    }
     
     if (isset($_GET['id'])) {
         if (isset($_GET['products'])) {

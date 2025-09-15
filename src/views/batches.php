@@ -150,8 +150,8 @@ $statuses = $statusModel->getActive();
 
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <label for="serial_start" class="form-label">Número Inicial</label>
-                            <input type="number" class="form-control" id="serial_start" name="serial_start" required>
+                            <label for="serial_start" class="form-label">Número Inicial (automático)</label>
+                            <input type="number" class="form-control" id="serial_start" name="serial_start" required readonly>
                             <div class="invalid-feedback">
                                 Por favor, informe o número inicial.
                             </div>
@@ -190,12 +190,9 @@ $statuses = $statusModel->getActive();
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label for="warranty" class="form-label">Garantia Padrão</label>
-                            <input type="text" class="form-control" id="warranty" name="warranty" required 
+                            <label for="warranty" class="form-label">Garantia Padrão (opcional)</label>
+                            <input type="text" class="form-control" id="warranty" name="warranty"
                                    placeholder="ex: 12 meses, 2 anos">
-                            <div class="invalid-feedback">
-                                Por favor, informe a garantia padrão.
-                            </div>
                         </div>
                         <div class="col-md-4">
                             <label for="notes" class="form-label">Observações</label>

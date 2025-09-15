@@ -81,7 +81,6 @@
                             <span class="badge d-flex align-items-center" id="status_preview" 
                                   style="background-color: #6c757d; width: fit-content;">
                                 <i class="fas fa-circle me-2"></i>
-                                Nome do Status
                             </span>
                         </div>
                     </div>
@@ -119,18 +118,15 @@ $(document).ready(function() {
 
     // Função para atualizar o preview
     function updatePreview() {
-        const name = $("#name").val() || "Nome do Status";
+        const name = $("#name").val() || "";
         const color = $("#color").val();
-        const icon = $("#icon").val() || "fas fa-circle";
-        
+
         const preview = $("#status_preview");
         preview.css("background-color", color);
-        preview.find("i").attr("class", icon + " me-2");
-        preview.find("i").next().remove();
-        preview.find("i").after(name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
-        
-        // Atualizar preview do ícone
-        $("#icon_preview").attr("class", icon);
+        // zera conteúdo e mostra apenas o nome formatado
+        preview.html(
+          $('<span>').text(name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))
+        );
     }
 
     // Sincronizar color picker com input text
