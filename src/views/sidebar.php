@@ -7,21 +7,32 @@
         <a href="index.php?page=batches" class="list-group-item list-group-item-action bg-dark text-white py-3">
             <i class="fas fa-layer-group me-2"></i> Lotes
         </a>
-        <a href="index.php?page=production_orders" class="list-group-item list-group-item-action bg-dark text-white py-3">
-            <i class="fas fa-clipboard-list me-2"></i> Pedidos
-        </a>
         <a href="index.php?page=main" class="list-group-item list-group-item-action bg-dark text-white py-3">
             <i class="fas fa-box me-2"></i> Produtos
         </a>
-        <a href="index.php?page=clients" class="list-group-item list-group-item-action bg-dark text-white py-3">
-            <i class="fas fa-users me-2"></i> Clientes
+        <a href="index.php?page=production_orders" class="list-group-item list-group-item-action bg-dark text-white py-3">
+            <i class="fas fa-clipboard-list me-2"></i> Pedidos
         </a>
-        <a href="index.php?page=tipos" class="list-group-item list-group-item-action bg-dark text-white py-3">
-            <i class="fas fa-tags me-2"></i> Tipos
+
+        <!-- Cadastros (submenu colapsável) -->
+        <a class="list-group-item list-group-item-action bg-dark text-white py-3 d-flex justify-content-between align-items-center"
+           data-bs-toggle="collapse" href="#submenu-cadastros" role="button" aria-expanded="false" aria-controls="submenu-cadastros">
+            <span><i class="fas fa-folder-open me-2"></i> Cadastros</span>
+            <i class="fas fa-chevron-right submenu-caret"></i>
         </a>
-        <a href="index.php?page=product_status" class="list-group-item list-group-item-action bg-dark text-white py-3">
-            <i class="fas fa-flag me-2"></i> Status
-        </a>
+        <div class="collapse" id="submenu-cadastros">
+            <div class="list-group list-group-flush bg-submenu">
+                <a href="index.php?page=clients" class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5">
+                    <i class="fas fa-users me-2"></i> Clientes
+                </a>
+                <a href="index.php?page=tipos" class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5">
+                    <i class="fas fa-tags me-2"></i> Tipos
+                </a>
+                <a href="index.php?page=product_status" class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5">
+                    <i class="fas fa-flag me-2"></i> Status
+                </a>
+            </div>
+        </div>
     </div>
 
     <div class="sidebar-footer mt-auto p-3">
@@ -32,3 +43,12 @@
         </form>
     </div>
 </div>
+
+<style>
+/* Submenu visual e transições */
+#submenu-cadastros.collapse { transition: height 0.25s ease; }
+.bg-submenu .list-group-item { background-color: #212529 !important; }
+.submenu-caret { transition: transform 0.2s ease; }
+a[aria-controls="submenu-cadastros"].collapsed .submenu-caret { transform: rotate(0deg); }
+a[aria-controls="submenu-cadastros"]:not(.collapsed) .submenu-caret { transform: rotate(90deg); }
+</style>

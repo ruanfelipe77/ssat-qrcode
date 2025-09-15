@@ -57,6 +57,7 @@ $tipos = $tipoModel->getAll();
                         <th>Cliente</th>
                         <th>Garantia</th>
                         <th style="width: 150px; text-align: center;">Ações</th>
+                        <th class="d-none">status_slug</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -121,6 +122,8 @@ $tipos = $tipoModel->getAll();
                                     </button>
                                 </div>
                             </td>
+                            <!-- Hidden status slug for reliable filtering -->
+                            <td class="d-none"><?= $product['status_name'] ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -207,7 +210,10 @@ var table = $('#mcp-table').DataTable({
         }
     ],
     order: [[0, 'desc']], // Ordenar por Lote (mais recente primeiro)
-    destroy: true
+    destroy: true,
+    columnDefs: [
+        { targets: 9, visible: false, searchable: true } // hidden status slug column
+    ]
 });
 
 // Filtros por Status
@@ -224,10 +230,10 @@ $('#statusFilter .dropdown-item').on('click', function(e) {
     
     if (status === '') {
         // Mostrar todos
-        table.column(3).search('').draw(); // Coluna 3 = Status
+        table.column(9).search('').draw(); // hidden status slug
     } else {
         // Filtrar por status específico
-        table.column(3).search(status, false, true).draw();
+        table.column(9).search('^' + status + '$', true, false).draw();
     }
 });
 </script>

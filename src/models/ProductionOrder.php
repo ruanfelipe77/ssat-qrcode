@@ -198,15 +198,34 @@ class ProductionOrder {
     }
 
     public function updateStatus($id, $status) {
-        $query = "UPDATE " . $this->table_name . "
-                 SET status = :status
-                 WHERE id = :id";
+        $this->conn->beginTransaction();
+        try {
+            $query = "UPDATE " . $this->table_name . "
+                     SET status = :status
+                     WHERE id = :id";
 
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":status", $status);
-        $stmt->bindParam(":id", $id);
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":status", $status);
+            $stmt->bindParam(":id", $id);
+            if (!$stmt->execute()) {
+                throw new Exception('Falha ao atualizar status do pedido');
+            }
 
-        return $stmt->execute();
+            // Se o pedido foi entregue, atualizar status dos produtos para 'Externo' (id=3)
+            if ($status === 'delivered') {
+                $up = $this->conn->prepare("UPDATE products SET status_id = 3 WHERE production_order_id = :id");
+                if (!$up->execute([':id' => $id])) {
+                    throw new Exception('Falha ao atualizar status dos produtos para Externo');
+                }
+            }
+
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            error_log('updateStatus error: ' . $e->getMessage());
+            return false;
+        }
     }
 
     public function update($data) {
