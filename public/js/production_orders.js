@@ -248,17 +248,88 @@ $(document).ready(function () {
   });
 
   // Atualizar status (usando delegação de eventos)
-  $(document).on("change", ".status-select", function () {
-    const id = $(this).data("id");
-    const status = $(this).val();
+  // Guardar status anterior para reverter se necessário
+  $(document).on("focus", ".status-select", function () {
+    $(this).data("prev", $(this).val());
+  });
 
+  $(document).on("change", ".status-select", async function () {
+    const selectEl = $(this);
+    const id = selectEl.data("id");
+    const newStatus = selectEl.val();
+    const prevStatus = selectEl.data("prev");
+
+    // Se usuário selecionar 'completed', validar campos exigidos no QR
+    if (newStatus === "completed" || newStatus === "delivered") {
+      try {
+        const [orderRes, productsRes] = await Promise.all([
+          $.get("src/controllers/ProductionOrderController.php", { id }),
+          $.get("src/controllers/ProductionOrderController.php", {
+            id,
+            products: true,
+          }),
+        ]);
+
+        const order =
+          typeof orderRes === "string" ? JSON.parse(orderRes) : orderRes;
+        const products =
+          typeof productsRes === "string"
+            ? JSON.parse(productsRes)
+            : productsRes;
+
+        // Verificações: serial_number, sale_date, destination, warranty nos produtos; NFe no pedido
+        const missing = [];
+        // NFe (se o campo existir no retorno do pedido)
+        if (order && Object.prototype.hasOwnProperty.call(order, "nfe")) {
+          const nfe = String(order.nfe || "").trim();
+          if (nfe === "") missing.push("Nota Fiscal (NFe) do pedido");
+        }
+        products.forEach((p) => {
+          const sn = String(p.serial_number || "").trim();
+          const sd = String(p.sale_date || "").trim();
+          const dest = String(p.destination || "").trim();
+          const war = String(p.warranty || "").trim();
+          const idTxt = `Produto ${p.serial_number || p.id}`;
+          if (sn === "") missing.push(`${idTxt}: Número de Série`);
+          if (sd === "" || sd === "0000-00-00")
+            missing.push(`${idTxt}: Data da Venda`);
+          if (dest === "") missing.push(`${idTxt}: Destino`);
+          if (war === "") missing.push(`${idTxt}: Garantia`);
+        });
+
+        if (missing.length > 0) {
+          // Alerta e reverte seleção
+          Swal.fire({
+            title: "Não é possível concluir",
+            html: `Preencha os seguintes campos antes de marcar como <b>Concluído</b>:<br><br><div class="text-start"><ul>${missing
+              .map((m) => `<li>• ${m}</li>`)
+              .join("")}</ul></div>`,
+            icon: "warning",
+          });
+          // Reverter select ao valor anterior
+          selectEl.val(prevStatus).trigger("change.select2");
+          return; // não prossegue para atualização
+        }
+      } catch (e) {
+        // Em caso de erro na validação, reverter e avisar
+        selectEl.val(prevStatus).trigger("change.select2");
+        Swal.fire({
+          title: "Erro",
+          text: "Falha ao validar campos para conclusão.",
+          icon: "error",
+        });
+        return;
+      }
+    }
+
+    // Prosseguir com atualização normal
     $.ajax({
       type: "POST",
       url: "src/controllers/ProductionOrderController.php",
       data: {
         action: "update_status",
         id: id,
-        status: status,
+        status: newStatus,
       },
       success: function (response) {
         const res = JSON.parse(response);
@@ -273,12 +344,22 @@ $(document).ready(function () {
             timer: 3000,
           });
         } else {
+          // Reverte em caso de erro do servidor também
+          selectEl.val(prevStatus).trigger("change.select2");
           Swal.fire({
             title: "Erro!",
             text: "Erro ao atualizar status",
             icon: "error",
           });
         }
+      },
+      error: function () {
+        selectEl.val(prevStatus).trigger("change.select2");
+        Swal.fire({
+          title: "Erro!",
+          text: "Erro ao atualizar status",
+          icon: "error",
+        });
       },
     });
   });
