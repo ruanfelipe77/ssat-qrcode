@@ -8,9 +8,11 @@ $(document).ready(function () {
     const modalEl = document.getElementById("productsModal");
     if (modalEl) {
       modalEl.addEventListener("hidden.bs.modal", function () {
-        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-        document.body.classList.remove('modal-open');
-        document.body.style.removeProperty('padding-right');
+        document
+          .querySelectorAll(".modal-backdrop")
+          .forEach((el) => el.remove());
+        document.body.classList.remove("modal-open");
+        document.body.style.removeProperty("padding-right");
       });
     }
   })();
@@ -28,14 +30,18 @@ $(document).ready(function () {
   // Buscar do servidor o próximo serial de início para o tipo selecionado
   function fetchNextSerialStart() {
     const tipoId = $("#tipo_id").val();
-    if (!tipoId) { setSerialStart(""); return; }
+    if (!tipoId) {
+      setSerialStart("");
+      return;
+    }
     $.ajax({
-      type: 'GET',
-      url: 'src/controllers/BatchController.php',
-      data: { action: 'get_next_serial_start', tipo_id: tipoId },
+      type: "GET",
+      url: "src/controllers/BatchController.php",
+      data: { action: "get_next_serial_start", tipo_id: tipoId },
       success: function (response) {
         try {
-          const res = typeof response === 'string' ? JSON.parse(response) : response;
+          const res =
+            typeof response === "string" ? JSON.parse(response) : response;
           if (res && res.success) {
             setSerialStart(res.next_start || 1);
           } else {
@@ -45,12 +51,14 @@ $(document).ready(function () {
           setSerialStart(1);
         }
       },
-      error: function () { setSerialStart(1); }
+      error: function () {
+        setSerialStart(1);
+      },
     });
   }
 
   // Ao mudar o tipo, buscar novo número inicial automático
-  $(document).on('change', '#tipo_id', function(){
+  $(document).on("change", "#tipo_id", function () {
     fetchNextSerialStart();
   });
 
@@ -65,24 +73,7 @@ $(document).ready(function () {
     language: {
       url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json",
     },
-    dom: "Bfrtip",
-    buttons: [
-      {
-        extend: "excel",
-        className: "btn btn-success",
-        text: '<i class="fas fa-file-excel me-2"></i>Excel',
-      },
-      {
-        extend: "pdf",
-        className: "btn btn-danger",
-        text: '<i class="fas fa-file-pdf me-2"></i>PDF',
-      },
-      {
-        extend: "print",
-        className: "btn btn-info",
-        text: '<i class="fas fa-print me-2"></i>Imprimir',
-      },
-    ],
+    dom: "frtip",
     order: [[0, "desc"]], // Ordenar por Lote (mais recente primeiro)
   });
 
@@ -109,7 +100,7 @@ $(document).ready(function () {
     if (modalElement) {
       const modal = new bootstrap.Modal(modalElement);
       // resetar campos do range
-      $("#serial_start").val("").prop('readonly', true);
+      $("#serial_start").val("").prop("readonly", true);
       $("#quantity").val("");
       $("#serial_preview").val("");
       // buscar número inicial quando escolher o tipo (ou já se tiver selecionado)

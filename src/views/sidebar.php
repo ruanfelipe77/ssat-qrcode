@@ -34,6 +34,9 @@
                 <a href="index.php?page=product_status" class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5">
                     <i class="fas fa-flag me-2"></i> Status
                 </a>
+                <a href="index.php?page=users" class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5">
+                    <i class="fas fa-user-cog me-2"></i> Usuários
+                </a>
             </div>
         </div>
     </div>

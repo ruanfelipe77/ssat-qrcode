@@ -158,24 +158,7 @@ var table = $('#tipos-table').DataTable({
     language: {
         url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json"
     },
-    dom: 'Bfrtip',
-    buttons: [
-        {
-            extend: 'excel',
-            className: 'btn btn-success',
-            text: '<i class="fas fa-file-excel me-2"></i>Excel'
-        },
-        {
-            extend: 'pdf',
-            className: 'btn btn-danger',
-            text: '<i class="fas fa-file-pdf me-2"></i>PDF'
-        },
-        {
-            extend: 'print',
-            className: 'btn btn-info',
-            text: '<i class="fas fa-print me-2"></i>Imprimir'
-        }
-    ],
+    dom: "frtip",
     destroy: true // Permite reinicialização
 });
 </script>

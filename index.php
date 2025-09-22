@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['logado']) || $_SESSION['logado'] !== true) {
+if (!isset($_SESSION['user_id']) || !$_SESSION['user_id']) {
     header('Location: login.php');
     exit;
 }
@@ -73,6 +73,9 @@ if (!isset($_SESSION['logado']) || $_SESSION['logado'] !== true) {
                     break;
                 case 'product_status':
                     include 'src/views/product_status.php';
+                    break;
+                case 'users':
+                    include 'src/views/users.php';
                     break;
                 case 'kanban':
                     include 'src/views/kanban.php';
