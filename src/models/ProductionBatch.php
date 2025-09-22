@@ -97,14 +97,25 @@ class ProductionBatch {
 
             $batch_id = $this->conn->lastInsertId();
 
-            // Verificar se status_id existe na tabela products
+            // Verificar colunas opcionais na tabela products
             $hasStatusColumn = $this->checkIfColumnExists('products', 'status_id');
+            $hasNotesColumn  = $this->checkIfColumnExists('products', 'notes');
             
-            if ($hasStatusColumn) {
+            if ($hasStatusColumn && $hasNotesColumn) {
+                $query = "INSERT INTO products 
+                        (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, status_id, notes)
+                        VALUES 
+                        (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW(), :status_id, :notes)";
+            } elseif ($hasStatusColumn && !$hasNotesColumn) {
                 $query = "INSERT INTO products 
                         (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, status_id)
                         VALUES 
                         (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW(), :status_id)";
+            } elseif (!$hasStatusColumn && $hasNotesColumn) {
+                $query = "INSERT INTO products 
+                        (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, notes)
+                        VALUES 
+                        (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW(), :notes)";
             } else {
                 $query = "INSERT INTO products 
                         (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date)
@@ -132,6 +143,9 @@ class ProductionBatch {
                 if ($hasStatusColumn) {
                     $status_id = $data['status_id'] ?? 1; // Default para "em_estoque"
                     $stmt->bindParam(":status_id", $status_id);
+                }
+                if ($hasNotesColumn) {
+                    $stmt->bindParam(":notes", $notes);
                 }
 
                 if(!$stmt->execute()) {

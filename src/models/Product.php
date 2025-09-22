@@ -27,6 +27,7 @@ class Product
             $hasBatchColumn = $this->checkIfColumnExists('products', 'production_batch_id');
             $hasOrderColumn = $this->checkIfColumnExists('products', 'production_order_id');
             $hasStatusColumn = $this->checkIfColumnExists('products', 'status_id');
+            $hasNotesColumn  = $this->checkIfColumnExists('products', 'notes');
             
             
             if ($hasBatchColumn && $hasOrderColumn && $hasStatusColumn) {
@@ -36,6 +37,7 @@ class Product
                                p.sale_date, 
                                p.destination, 
                                p.warranty, 
+                               " . ($hasNotesColumn ? "p.notes, " : "NULL as notes, ") . "
                                p.status_id,
                                p.status,
                                COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
@@ -65,6 +67,7 @@ class Product
                                p.sale_date, 
                                p.destination, 
                                p.warranty, 
+                               " . ($hasNotesColumn ? "p.notes, " : "NULL as notes, ") . "
                                NULL as status_id,
                                COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
                                'Sem Lote' as batch_number,
@@ -138,25 +141,32 @@ class Product
     {
         // Verificar se status_id existe na tabela
         $hasStatusColumn = $this->checkIfColumnExists('products', 'status_id');
+        $hasNotesColumn  = $this->checkIfColumnExists('products', 'notes');
         
         if ($hasStatusColumn) {
-            $stmt = $this->conn->prepare('INSERT INTO products (serial_number, sale_date, destination, warranty, tipo_id, status_id) VALUES (:serial_number, :sale_date, :destination, :warranty, :tipo_id, :status_id)');
+            $columns = 'serial_number, sale_date, destination, warranty, tipo_id, status_id' . ($hasNotesColumn ? ', notes' : '');
+            $place   = ':serial_number, :sale_date, :destination, :warranty, :tipo_id, :status_id' . ($hasNotesColumn ? ', :notes' : '');
+            $stmt = $this->conn->prepare("INSERT INTO products ($columns) VALUES ($place)");
             return $stmt->execute([
                 'serial_number' => $data['serial_number'],
                 'sale_date' => $data['sale_date'],
                 'destination' => $data['destination'],
                 'warranty' => $data['warranty'],
                 'tipo_id' => $data['tipo_id'],
-                'status_id' => $data['status_id'] ?? 1 // Default para "em_estoque"
+                'status_id' => $data['status_id'] ?? 1, // Default para "em_estoque"
+                'notes' => $hasNotesColumn ? ($data['notes'] ?? null) : null
             ]);
         } else {
-            $stmt = $this->conn->prepare('INSERT INTO products (serial_number, sale_date, destination, warranty, tipo_id) VALUES (:serial_number, :sale_date, :destination, :warranty, :tipo_id)');
+            $columns = 'serial_number, sale_date, destination, warranty, tipo_id' . ($hasNotesColumn ? ', notes' : '');
+            $place   = ':serial_number, :sale_date, :destination, :warranty, :tipo_id' . ($hasNotesColumn ? ', :notes' : '');
+            $stmt = $this->conn->prepare("INSERT INTO products ($columns) VALUES ($place)");
             return $stmt->execute([
                 'serial_number' => $data['serial_number'],
                 'sale_date' => $data['sale_date'],
                 'destination' => $data['destination'],
                 'warranty' => $data['warranty'],
-                'tipo_id' => $data['tipo_id']
+                'tipo_id' => $data['tipo_id'],
+                'notes' => $hasNotesColumn ? ($data['notes'] ?? null) : null
             ]);
         }
     }
@@ -165,9 +175,10 @@ class Product
     {
         // Verificar se status_id existe na tabela
         $hasStatusColumn = $this->checkIfColumnExists('products', 'status_id');
+        $hasNotesColumn  = $this->checkIfColumnExists('products', 'notes');
         
         if ($hasStatusColumn) {
-            $stmt = $this->conn->prepare('UPDATE products SET serial_number = :serial_number, sale_date = :sale_date, destination = :destination, warranty = :warranty, tipo_id = :tipo_id, status_id = :status_id WHERE id = :id');
+            $stmt = $this->conn->prepare('UPDATE products SET serial_number = :serial_number, sale_date = :sale_date, destination = :destination, warranty = :warranty, tipo_id = :tipo_id, status_id = :status_id' . ($hasNotesColumn ? ', notes = :notes' : '') . ' WHERE id = :id');
             return $stmt->execute([
                 'id' => $data['id'],
                 'serial_number' => $data['serial_number'],
@@ -175,17 +186,19 @@ class Product
                 'destination' => $data['destination'],
                 'warranty' => $data['warranty'],
                 'tipo_id' => $data['tipo_id'],
-                'status_id' => $data['status_id'] ?? 1 // Default para "em_estoque"
+                'status_id' => $data['status_id'] ?? 1, // Default para "em_estoque"
+                'notes' => $hasNotesColumn ? ($data['notes'] ?? null) : null
             ]);
         } else {
-            $stmt = $this->conn->prepare('UPDATE products SET serial_number = :serial_number, sale_date = :sale_date, destination = :destination, warranty = :warranty, tipo_id = :tipo_id WHERE id = :id');
+            $stmt = $this->conn->prepare('UPDATE products SET serial_number = :serial_number, sale_date = :sale_date, destination = :destination, warranty = :warranty, tipo_id = :tipo_id' . ($hasNotesColumn ? ', notes = :notes' : '') . ' WHERE id = :id');
             return $stmt->execute([
                 'id' => $data['id'],
                 'serial_number' => $data['serial_number'],
                 'sale_date' => $data['sale_date'],
                 'destination' => $data['destination'],
                 'warranty' => $data['warranty'],
-                'tipo_id' => $data['tipo_id']
+                'tipo_id' => $data['tipo_id'],
+                'notes' => $hasNotesColumn ? ($data['notes'] ?? null) : null
             ]);
         }
     }

@@ -53,6 +53,7 @@ $tipos = $tipoModel->getAll();
                         <th>Data de venda</th>
                         <th>Cliente</th>
                         <th>Garantia</th>
+                        <th>Obs</th>
                         <th style="width: 150px; text-align: center;">Ações</th>
                         <th class="d-none">status_slug</th>
                     </tr>
@@ -106,6 +107,15 @@ $tipos = $tipoModel->getAll();
                                 <?php endif; ?>
                             </td>
                             <td><?= $product['warranty'] ?></td>
+                            <td>
+                                <?php if (!empty($product['notes'])): ?>
+                                    <button class="btn btn-link text-dark p-0 view-product-notes" 
+                                            data-notes="<?= htmlspecialchars($product['notes']) ?>"
+                                            title="Ver Observações">
+                                        <i class="fas fa-sticky-note"></i>
+                                    </button>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <div class="d-flex justify-content-center align-items-center gap-3">
                                     <button class="btn btn-link text-dark p-0 edit-mcp" data-id="<?= $product['id'] ?>" title="Editar">
@@ -209,7 +219,7 @@ var table = $('#mcp-table').DataTable({
     order: [[0, 'desc']], // Ordenar por Lote (mais recente primeiro)
     destroy: true,
     columnDefs: [
-        { targets: 9, visible: false, searchable: true } // hidden status slug column
+        { targets: 10, visible: false, searchable: true } // hidden status slug column
     ]
 });
 
@@ -227,10 +237,42 @@ $('#statusFilter .dropdown-item').on('click', function(e) {
     
     if (status === '') {
         // Mostrar todos
-        table.column(9).search('').draw(); // hidden status slug
+        table.column(10).search('').draw(); // hidden status slug
     } else {
         // Filtrar por status específico
-        table.column(9).search('^' + status + '$', true, false).draw();
+        table.column(10).search('^' + status + '$', true, false).draw();
     }
+});
+
+// Modal de Observações do Produto
+const productNotesModalHtml = `
+<div class="modal fade" id="productNotesModal" tabindex="-1" aria-labelledby="productNotesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="productNotesModalLabel">
+          <i class=\"fas fa-sticky-note me-2\"></i>
+          Observações do Produto
+        </h5>
+        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\" aria-label=\"Close\"></button>
+      </div>
+      <div class="modal-body">
+        <p class="product-notes-content mb-0"></p>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+if (!document.getElementById('productNotesModal')) {
+  const container = document.createElement('div');
+  container.innerHTML = productNotesModalHtml;
+  document.body.appendChild(container.firstElementChild);
+}
+
+$(document).on('click', '.view-product-notes', function() {
+  const notes = $(this).data('notes') || '';
+  $('#productNotesModal .product-notes-content').text(notes);
+  const modal = new bootstrap.Modal(document.getElementById('productNotesModal'));
+  modal.show();
 });
 </script>

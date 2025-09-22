@@ -77,6 +77,11 @@ $statuses = $statusModel->getActive();
                     </div>
 
                     <div class="mb-3">
+                        <label for="notes" class="form-label">Observações (opcional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Observações do produto"></textarea>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="status_id" class="form-label">Status</label>
                         <select class="form-select" name="status_id" id="status_id" required>
                             <option value="">Selecione um status</option>

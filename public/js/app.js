@@ -38,6 +38,7 @@ $(document).ready(function () {
         $("#sale_date").val(mcp.sale_date);
         $("#destination").val(mcp.destination);
         $("#warranty").val(mcp.warranty);
+        $("#notes").val(mcp.notes || "");
         $("#tipo_id").val(mcp.tipo_id);
         $("#status_id").val(mcp.status_id || 1);
 
