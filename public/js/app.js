@@ -1,4 +1,8 @@
 $(document).ready(function () {
+  // Page guard: only execute on the Products main page
+  if (!document.getElementById('mcp-table')) {
+    return;
+  }
   // Função para limpar e resetar o formulário
   function resetForm() {
     const form = $("#mcpForm");

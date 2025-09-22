@@ -1,4 +1,8 @@
 $(document).ready(function () {
+  // Page guard: only run on pages that have the orders table
+  if (!document.getElementById("orders-table")) {
+    return;
+  }
   // Garantir que backdrops não fiquem presos ao fechar o modal
   (function setupModalCleanup() {
     const modalEl = document.getElementById("productsModal");

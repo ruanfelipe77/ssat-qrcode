@@ -91,6 +91,38 @@ if ($product) {
 
 $tipoName = $display['tipo_id'] !== null ? getTipoName($display['tipo_id'], $conn) : 'Tipo Desconhecido';
 $destinationText = formatDestination($conn, $display['destination']);
+
+// Helpers de formatação: quando vazio, marcar em vermelho como "Não informado"
+$fmtText = function($v) {
+  $s = is_string($v) ? trim($v) : '';
+  return $s !== '' ? htmlspecialchars($s) : '<span class="text-danger">NÃO INFORMADO</span>';
+};
+$fmtDate = function($v) {
+  $s = is_string($v) ? trim($v) : '';
+  if ($s === '' || $s === '0000-00-00') {
+    return '<span class="text-danger">NÃO INFORMADO</span>';
+  }
+  try {
+    return (new DateTime($s))->format('d/m/Y');
+  } catch (Throwable $e) {
+    return '<span class="text-danger">NÃO INFORMADO</span>';
+  }
+};
+
+$produtoVal  = $fmtText($tipoName);
+$serialVal   = $fmtText($display['serial_number'] ?? '');
+$saleVal     = $fmtDate($display['sale_date'] ?? '');
+$destVal     = $fmtText($destinationText);
+$warrantyVal = $fmtText($display['warranty'] ?? '');
+$nfeVal      = $fmtText($display['nfe'] ?? '');
+
+// Flags de campos faltantes (sem dados)
+$missingSerial   = trim($display['serial_number'] ?? '') === '';
+$missingSale     = ($d = trim($display['sale_date'] ?? '')) === '' || $d === '0000-00-00';
+$missingDest     = trim($display['destination'] ?? '') === '';
+$missingWarranty = trim($display['warranty'] ?? '') === '';
+$missingNfe      = trim($display['nfe'] ?? '') === '';
+$missingAny      = $missingSerial || $missingSale || $missingDest || $missingWarranty || $missingNfe;
 ?>
 
 <!DOCTYPE html>
@@ -129,15 +161,46 @@ $destinationText = formatDestination($conn, $display['destination']);
       <?php include 'src/views/header.php'; ?>
       <div class="container-fluid" style="margin-top:20px;">
         <h2>Informações do Produto</h2>
-        <ul>
-          <li><strong>Produto:</strong> <?= htmlspecialchars($tipoName) ?></li>
-          <li><strong>Número de Série:</strong> <?= htmlspecialchars($display['serial_number']) ?></li>
-          <li><strong>Data da Venda:</strong> <?= $display['sale_date'] ? (new DateTime($display['sale_date']))->format('d/m/Y') : '' ?></li>
-          <li><strong>Destino:</strong> <?= $destinationText ?></li>
-          <li><strong>Garantia:</strong> <?= htmlspecialchars($display['warranty']) ?></li>
-          <?php if (!empty($display['nfe'])): ?>
-          <li><strong>Nota Fiscal:</strong> <?= htmlspecialchars($display['nfe']) ?></li>
-          <?php endif; ?>
+
+        <?php if ($missingAny): ?>
+          <div class="alert alert-warning d-flex align-items-center" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <div>
+              Este produto possui informações pendentes. Campos marcados como <span class="text-danger fw-bold">NÃO INFORMADO</span> devem ser preenchidos.
+            </div>
+          </div>
+        <?php endif; ?>
+
+        <ul class="list-unstyled">
+          <li class="mb-1">
+            <strong>Produto:</strong>
+            <?= $produtoVal ?>
+          </li>
+          <li class="mb-1">
+            <strong>Número de Série:</strong>
+            <?php if ($missingSerial): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+            <?= $serialVal ?>
+          </li>
+          <li class="mb-1">
+            <strong>Data da Venda:</strong>
+            <?php if ($missingSale): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+            <?= $saleVal ?>
+          </li>
+          <li class="mb-1">
+            <strong>Destino:</strong>
+            <?php if ($missingDest): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+            <?= $destVal ?>
+          </li>
+          <li class="mb-1">
+            <strong>Garantia:</strong>
+            <?php if ($missingWarranty): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+            <?= $warrantyVal ?>
+          </li>
+          <li class="mb-1">
+            <strong>Nota Fiscal:</strong>
+            <?php if ($missingNfe): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+            <?= $nfeVal ?>
+          </li>
         </ul>
       </div>
     </div>
