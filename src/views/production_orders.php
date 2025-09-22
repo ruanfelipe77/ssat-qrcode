@@ -72,14 +72,12 @@ $orders = $poModel->getAll();
                             <td><?= $order['warranty'] ?></td>
                             <td>
                                 <div class="d-flex justify-content-center align-items-center gap-3">
-                                    <?php if (!in_array($order['status'], ['completed','delivered'])): ?>
                                     <button class="btn btn-link text-dark p-0 edit-order" 
                                             data-id="<?= $order['id'] ?>" 
                                             data-order="<?= htmlspecialchars($order['order_number']) ?>"
                                             title="Editar Pedido">
                                         <i class="fas fa-pen fs-5"></i>
                                     </button>
-                                    <?php endif; ?>
                                     <button class="btn btn-link text-dark p-0 print-all" 
                                             data-id="<?= $order['id'] ?>" 
                                             title="Imprimir QR Codes">

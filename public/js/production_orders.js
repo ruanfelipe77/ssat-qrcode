@@ -37,6 +37,7 @@ $(document).ready(function () {
       $("#client_id").val(order.client_id);
       $("#order_date").val(order.order_date);
       $("#warranty").val(order.warranty);
+      $("#nfe").val(order.nfe || "");
       $(".order-modal-title-text").text(`Editar Pedido ${orderNumber}`);
 
       // Construir UI dos produtos: unir disponíveis + já do pedido
@@ -201,6 +202,7 @@ $(document).ready(function () {
     $("#client_id").val("");
     $("#order_date").val("");
     $("#warranty").val("");
+    $("#nfe").val("");
     $(".order-modal-title-text").text("Novo Pedido");
     const modal = new bootstrap.Modal(document.getElementById("orderModal"));
     modal.show();

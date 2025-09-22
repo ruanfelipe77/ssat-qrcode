@@ -58,6 +58,10 @@ $availableProducts = $productModel->getAvailableProducts();
                             <input type="text" class="form-control" id="order_number" name="order_number" placeholder="Informe o número do PP" required>
                             <div class="invalid-feedback">Informe o número do PP.</div>
                         </div>
+                        <div class="col-md-2">
+                            <label for="nfe" class="form-label">NFe (opcional)</label>
+                            <input type="text" class="form-control" id="nfe" name="nfe" placeholder="Número/Chave da NFe">
+                        </div>
                     </div>
 
                     <div class="row mb-3">

@@ -41,10 +41,24 @@ $conn = $db->getConnection();
 
 // Buscar produto por ID (preferido); caso contrário, usar dados do JSON
 $product = null;
+$orderNfe = null;
 if ($id) {
   $stmt = $conn->prepare('SELECT * FROM products WHERE id = :id');
   $stmt->execute(['id' => $id]);
   $product = $stmt->fetch(PDO::FETCH_ASSOC);
+  // Tentar obter NFe do pedido associado, se houver coluna e vinculação
+  if ($product && !empty($product['production_order_id'])) {
+    try {
+      // Verificar se a coluna nfe existe na tabela de pedidos
+      $probe = $conn->prepare('SELECT nfe FROM sales_orders WHERE id = :oid LIMIT 1');
+      $probe->execute(['oid' => $product['production_order_id']]);
+      if ($row = $probe->fetch(PDO::FETCH_ASSOC)) {
+        $orderNfe = $row['nfe'] ?? null;
+      }
+    } catch (Throwable $e) {
+      // Silenciosamente ignorar se a coluna não existir
+    }
+  }
 }
 
 // Montar fonte de dados para exibição
@@ -56,6 +70,7 @@ if ($product) {
     'destination' => $product['destination'] ?? '',
     'warranty' => $product['warranty'] ?? '',
   ];
+  if ($orderNfe) { $display['nfe'] = $orderNfe; }
 } elseif (is_array($data)) {
   $display = [
     'tipo_id' => $data['tipo_id'] ?? null,
@@ -93,19 +108,16 @@ $destinationText = formatDestination($conn, $display['destination']);
   <script src="public/js/app.js"></script>
   
   <style>
-    html, body {
-      height: 100%;
-    }
+    html, body { height: 100%; }
     #wrapper {
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
+      min-height: 100vh; /* ensure full viewport height */
     }
-    #page-content-wrapper {
-      flex: 1;
-    }
+    #page-content-wrapper { flex: 1 0 auto; }
     footer {
       flex-shrink: 0;
+      margin-top: auto; /* push footer to bottom when content is short */
     }
   </style>
   
@@ -113,7 +125,7 @@ $destinationText = formatDestination($conn, $display['destination']);
 
 <body>
   <div class="d-flex flex-column" id="wrapper">
-    <div id="page-content-wrapper" class="w-100" style="max-height:280px;">
+    <div id="page-content-wrapper" class="w-100">
       <?php include 'src/views/header.php'; ?>
       <div class="container-fluid" style="margin-top:20px;">
         <h2>Informações do Produto</h2>
@@ -123,12 +135,15 @@ $destinationText = formatDestination($conn, $display['destination']);
           <li><strong>Data da Venda:</strong> <?= $display['sale_date'] ? (new DateTime($display['sale_date']))->format('d/m/Y') : '' ?></li>
           <li><strong>Destino:</strong> <?= $destinationText ?></li>
           <li><strong>Garantia:</strong> <?= htmlspecialchars($display['warranty']) ?></li>
+          <?php if (!empty($display['nfe'])): ?>
+          <li><strong>Nota Fiscal:</strong> <?= htmlspecialchars($display['nfe']) ?></li>
+          <?php endif; ?>
         </ul>
       </div>
     </div>
 
     <!-- Rodapé -->
-    <footer class="bg-dark text-white mt-4">
+    <footer class="bg-dark text-white mt-5">
       <div class="container py-4">
         <div class="row">
           <div class="col-md-12">

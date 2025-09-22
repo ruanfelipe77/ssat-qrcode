@@ -8,6 +8,17 @@ class ProductionOrder {
         $this->conn = $db;
     }
 
+    private function checkIfColumnExists($table, $column) {
+        try {
+            $sql = "SELECT $column FROM $table LIMIT 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return true;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
     private function orderNumberExists($orderNumber, $excludeId = null) {
         $sql = "SELECT id FROM " . $this->table_name . " WHERE order_number = :onum";
         if ($excludeId) { $sql .= " AND id <> :id"; }
@@ -26,10 +37,10 @@ class ProductionOrder {
 
         try {
             // Criar o PP
-            $query = "INSERT INTO " . $this->table_name . "
-                    (order_number, client_id, order_date, warranty, notes, status)
-                    VALUES
-                    (:order_number, :client_id, :order_date, :warranty, :notes, :status)";
+            $hasNfe = $this->checkIfColumnExists($this->table_name, 'nfe');
+            $cols = 'order_number, client_id, order_date, warranty, notes, status' . ($hasNfe ? ', nfe' : '');
+            $vals = ':order_number, :client_id, :order_date, :warranty, :notes, :status' . ($hasNfe ? ', :nfe' : '');
+            $query = "INSERT INTO " . $this->table_name . " ($cols) VALUES ($vals)";
 
             $stmt = $this->conn->prepare($query);
 
@@ -48,6 +59,7 @@ class ProductionOrder {
             $order_date = htmlspecialchars(strip_tags($data['order_date']));
             $warranty = htmlspecialchars(strip_tags($data['warranty']));
             $notes = htmlspecialchars(strip_tags($data['notes'] ?? ''));
+            $nfe = isset($data['nfe']) ? htmlspecialchars(strip_tags($data['nfe'])) : null;
 
             // Bind
             $stmt->bindParam(":order_number", $order_number);
@@ -56,6 +68,7 @@ class ProductionOrder {
             $stmt->bindParam(":warranty", $warranty);
             $stmt->bindParam(":notes", $notes);
             $stmt->bindParam(":status", $status);
+            if ($hasNfe) { $stmt->bindParam(":nfe", $nfe); }
 
             if(!$stmt->execute()) {
                 throw new Exception("Erro ao criar PP");
@@ -146,6 +159,7 @@ class ProductionOrder {
     }
 
     public function getById($id) {
+        $hasNfe = $this->checkIfColumnExists($this->table_name, 'nfe');
         $query = "SELECT po.*, 
                         c.name as client_name, 
                         c.city as client_city, 
@@ -164,6 +178,7 @@ class ProductionOrder {
 
     public function getAll() {
         try {
+            $hasNfe = $this->checkIfColumnExists($this->table_name, 'nfe');
             $query = "SELECT po.*, 
                             COALESCE(c.name, 'Cliente Não Encontrado') as client_name, 
                             COALESCE(c.city, '') as client_city, 
@@ -238,12 +253,13 @@ class ProductionOrder {
             }
 
             // Atualizar cabeçalho do pedido
+            $hasNfe = $this->checkIfColumnExists($this->table_name, 'nfe');
             $query = "UPDATE " . $this->table_name . "
                      SET order_number = :order_number,
                          client_id = :client_id,
                          order_date = :order_date,
                          warranty = :warranty,
-                         notes = :notes
+                         notes = :notes" . ($hasNfe ? ", nfe = :nfe" : "") . "
                      WHERE id = :id";
             $stmt = $this->conn->prepare($query);
             $order_number = trim($data['order_number'] ?? '');
@@ -253,11 +269,13 @@ class ProductionOrder {
             $order_date = htmlspecialchars(strip_tags($data['order_date']));
             $warranty = htmlspecialchars(strip_tags($data['warranty']));
             $notes = htmlspecialchars(strip_tags($data['notes'] ?? ''));
+            $nfe = isset($data['nfe']) ? htmlspecialchars(strip_tags($data['nfe'])) : null;
             $stmt->bindParam(':order_number', $order_number);
             $stmt->bindParam(':client_id', $client_id);
             $stmt->bindParam(':order_date', $order_date);
             $stmt->bindParam(':warranty', $warranty);
             $stmt->bindParam(':notes', $notes);
+            if ($hasNfe) { $stmt->bindParam(':nfe', $nfe); }
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
             if (!$stmt->execute()) {
                 throw new Exception('Erro ao atualizar cabeçalho do pedido');
