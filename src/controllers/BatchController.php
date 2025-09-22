@@ -2,6 +2,7 @@
 
 require '../../database.php';
 require '../../src/models/ProductionBatch.php';
+require '../../src/models/Audit.php';
 
 $batchModel = new ProductionBatch(Database::getInstance()->getConnection());
 
@@ -16,12 +17,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'create_batch':
             $result = $batchModel->create($_POST);
             error_log("BatchController create_batch result: " . print_r($result, true));
+            if (!empty($result['success'])) {
+                $batchId = (int)($result['batch_id'] ?? 0);
+                // Buscar produtos criados para este lote
+                $prods = $batchModel->getProducts($batchId);
+                $productList = array_map(function($p){
+                    return [
+                        'id' => (int)$p['id'],
+                        'serial_number' => $p['serial_number'] ?? null,
+                        'tipo_name' => $p['tipo_name'] ?? null,
+                        'warranty' => $p['warranty'] ?? null,
+                    ];
+                }, $prods ?: []);
+                Audit::log(Database::getInstance()->getConnection(), 'create', 'batch', $batchId, [
+                    'batch_number' => $result['batch_number'] ?? null,
+                    'payload' => $_POST,
+                    'products' => $productList,
+                ]);
+            }
             echo json_encode($result);
             break;
 
         case 'delete_batch':
-            $id = $_POST['id'] ?? '';
+            $id = (int)($_POST['id'] ?? 0);
+            // Coletar contexto do lote e produtos
+            $batch = $batchModel->getById($id);
+            $products = $batchModel->getProducts($id);
             $result = $batchModel->delete($id);
+            if (!empty($result['success'])) {
+                Audit::log(Database::getInstance()->getConnection(), 'delete', 'batch', $id, [
+                    'batch_number' => $batch['batch_number'] ?? null,
+                    'product_ids' => array_map(fn($p)=>$p['id'], $products ?? []),
+                ]);
+            }
             echo json_encode($result);
             break;
 

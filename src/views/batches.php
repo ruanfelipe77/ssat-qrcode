@@ -35,7 +35,7 @@ $statuses = $statusModel->getActive();
                         <th>Produto</th>
                         <th>Total Produtos</th>
                         <th>Disponíveis</th>
-                        <th>Observações</th>
+                        <th>Obs</th>
                         <th style="width: 150px; text-align: center;">Ações</th>
                     </tr>
                 </thead>

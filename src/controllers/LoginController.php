@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../../database.php';
+require_once '../../src/models/Audit.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = trim($_POST['email'] ?? '');
@@ -16,6 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       // Autenticado
       $_SESSION['user_id'] = (int)$user['id'];
       $_SESSION['user_name'] = $user['name'];
+      // Audit login
+      try {
+        $db = Database::getInstance()->getConnection();
+        Audit::log($db, 'login', 'user', (int)$user['id'], [ 'email' => $user['email'] ]);
+      } catch (Throwable $e) { /* ignore */ }
       header('Location: ../../index.php');
       exit;
     }

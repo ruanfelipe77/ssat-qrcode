@@ -2,6 +2,7 @@
 
 require '../../database.php';
 require '../../src/models/Client.php';
+require '../../src/models/Audit.php';
 
 $clientModel = new Client(Database::getInstance()->getConnection());
 
@@ -11,17 +12,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     switch($action) {
         case 'add':
             $success = $clientModel->create($_POST);
+            if ($success !== false) {
+                $details = [
+                    'id' => $success,
+                    'after' => $_POST,
+                ];
+                Audit::log(Database::getInstance()->getConnection(), 'create', 'client', (int)$success, $details);
+            }
             echo json_encode(['success' => $success !== false, 'id' => $success]);
             break;
 
         case 'edit':
+            $before = $clientModel->getById((int)($_POST['id'] ?? 0));
             $success = $clientModel->update($_POST);
+            if ($success) {
+                $after = $clientModel->getById((int)($_POST['id'] ?? 0));
+                Audit::log(Database::getInstance()->getConnection(), 'update', 'client', (int)($_POST['id'] ?? 0), [
+                    'before' => $before,
+                    'after' => $after,
+                ]);
+            }
             echo json_encode(['success' => $success]);
             break;
 
         case 'delete':
-            $id = $_POST['id'] ?? '';
+            $id = (int)($_POST['id'] ?? 0);
+            $before = $clientModel->getById($id);
             $success = $clientModel->delete($id);
+            if ($success) {
+                Audit::log(Database::getInstance()->getConnection(), 'delete', 'client', $id, [ 'before' => $before ]);
+            }
             echo json_encode(['success' => $success]);
             break;
 

@@ -39,6 +39,9 @@
                 </a>
             </div>
         </div>
+        <a href="index.php?page=audit" class="list-group-item list-group-item-action bg-dark text-white py-2">
+            <i class="fas fa-clipboard-list me-2"></i> Auditoria
+        </a>
     </div>
 
     <div class="sidebar-footer mt-auto p-3">

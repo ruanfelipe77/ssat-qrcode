@@ -46,6 +46,7 @@ if (!isset($_SESSION['user_id']) || !$_SESSION['user_id']) {
     <script src="public/js/app.js"></script>
     <script src="public/js/production_orders.js"></script>
     <script src="public/js/batches.js"></script>
+    <script src="public/js/audit.js"></script>
 </head>
 
 <body>
@@ -79,6 +80,9 @@ if (!isset($_SESSION['user_id']) || !$_SESSION['user_id']) {
                     break;
                 case 'kanban':
                     include 'src/views/kanban.php';
+                    break;
+                case 'audit':
+                    include 'src/views/audit.php';
                     break;
                 default:
                     include 'src/views/batches.php'; // Default page agora é Lotes
