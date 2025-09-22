@@ -551,14 +551,6 @@ $(document).ready(function() {
 
         const selectedProducts = $('.product-select:checked').length;
         const isUpdate = $('#order_action').val() === 'update_order';
-        if (!isUpdate && selectedProducts === 0) {
-            Swal.fire({
-                title: 'Atenção!',
-                text: 'Selecione pelo menos um produto para o pedido.',
-                icon: 'warning'
-            });
-            return;
-        }
 
         const formData = $(this).serialize();
         
@@ -566,7 +558,9 @@ $(document).ready(function() {
             title: isUpdate ? 'Atualizar pedido' : 'Confirmação',
             html: isUpdate
                 ? 'Deseja salvar as alterações deste pedido?'
-                : `Você está prestes a criar um pedido com:<br><b>${selectedProducts}</b> produtos<br><br>Deseja continuar?`,
+                : (selectedProducts > 0
+                    ? `Você está prestes a criar um pedido com:<br><b>${selectedProducts}</b> produtos<br><br>Deseja continuar?`
+                    : `Você está prestes a criar um pedido <b>sem produtos</b>.<br><br>Ele poderá ser preenchido posteriormente.<br><br>Deseja continuar?`),
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: isUpdate ? 'Salvar alterações' : 'Sim, criar pedido',

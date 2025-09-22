@@ -51,7 +51,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    if (isset($_GET['id'])) {
+    if (isset($_GET['empty_count'])) {
+        try {
+            $db = Database::getInstance()->getConnection();
+            $sql = "SELECT COUNT(*) AS cnt FROM (
+                        SELECT po.id
+                        FROM sales_orders po
+                        LEFT JOIN products p ON p.production_order_id = po.id
+                        GROUP BY po.id
+                        HAVING COUNT(p.id) = 0
+                    ) t";
+            $stmt = $db->prepare($sql);
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            echo json_encode(['count' => intval($row['cnt'] ?? 0)]);
+        } catch (Throwable $e) {
+            echo json_encode(['count' => 0]);
+        }
+    } elseif (isset($_GET['id'])) {
         if (isset($_GET['products'])) {
             $products = $poModel->getProducts($_GET['id']);
             echo json_encode($products);

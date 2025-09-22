@@ -76,30 +76,25 @@ class ProductionOrder {
 
             $pp_id = $this->conn->lastInsertId();
 
-            // Vincular produtos existentes ao pedido
-            if (!isset($data['products']) || empty($data['products'])) {
-                throw new Exception("Nenhum produto selecionado");
-            }
-
-            $query = "UPDATE products 
-                    SET production_order_id = :pp_id,
-                        sale_date = :sale_date,
-                        destination = :client_id,
-                        warranty = :warranty
-                    WHERE id = :product_id
-                    AND production_order_id IS NULL";
-            
-            $stmt = $this->conn->prepare($query);
-            
-            foreach ($data['products'] as $productId) {
-                $stmt->bindParam(":pp_id", $pp_id);
-                $stmt->bindParam(":sale_date", $order_date);
-                $stmt->bindParam(":client_id", $client_id);
-                $stmt->bindParam(":warranty", $warranty);
-                $stmt->bindParam(":product_id", $productId);
-
-                if(!$stmt->execute()) {
-                    throw new Exception("Erro ao vincular produto #" . $productId);
+            // Vincular produtos existentes ao pedido (opcional)
+            if (isset($data['products']) && !empty($data['products'])) {
+                $query = "UPDATE products 
+                        SET production_order_id = :pp_id,
+                            sale_date = :sale_date,
+                            destination = :client_id,
+                            warranty = :warranty
+                        WHERE id = :product_id
+                        AND production_order_id IS NULL";
+                $stmt = $this->conn->prepare($query);
+                foreach ($data['products'] as $productId) {
+                    $stmt->bindParam(":pp_id", $pp_id);
+                    $stmt->bindParam(":sale_date", $order_date);
+                    $stmt->bindParam(":client_id", $client_id);
+                    $stmt->bindParam(":warranty", $warranty);
+                    $stmt->bindParam(":product_id", $productId);
+                    if(!$stmt->execute()) {
+                        throw new Exception("Erro ao vincular produto #" . $productId);
+                    }
                 }
             }
 

@@ -13,9 +13,18 @@ $orders = $poModel->getAll();
 <div class="container-fluid p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Pedidos de Produção</h2>
-        <button class="btn btn-primary" id="add-order">
-            <i class="fas fa-plus me-2"></i>Novo Pedido
-        </button>
+        <div class="d-flex align-items-center gap-3">
+            <div class="input-group input-group-sm" title="Filtrar por pedidos sem produtos" style="max-width: 170px;">
+                <span class="input-group-text py-1 px-2"><i class="fas fa-filter small"></i></span>
+                <select id="orders-only-empty-filter" class="form-select form-select-sm">
+                    <option value="all">Todos</option>
+                    <option value="empty">Sem produtos</option>
+                </select>
+            </div>
+            <button class="btn btn-primary btn-sm px-4" id="add-order">
+                <i class="fas fa-plus me-2"></i>Novo Pedido
+            </button>
+        </div>
     </div>
 
     <div class="card">
@@ -30,6 +39,7 @@ $orders = $poModel->getAll();
                         <th>Status</th>
                         <th>Garantia</th>
                         <th style="width: 180px; text-align: center;">Ações</th>
+                        <th class="d-none">total_products_hidden</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -98,6 +108,7 @@ $orders = $poModel->getAll();
                                     </button>
                                 </div>
                             </td>
+                            <td class="d-none"><?= (int)$order['total_products'] ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

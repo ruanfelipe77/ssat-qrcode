@@ -224,6 +224,45 @@ $(document).ready(function () {
     order: [[0, "desc"]], // Ordenar por PP (mais recente primeiro)
   });
 
+  // Filtro: Somente pedidos sem produtos
+  function applyOnlyEmptyFilter() {
+    var val = $('#orders-only-empty-filter').val();
+    // Última coluna é a oculta com total de produtos
+    var totalColIdx = table.columns().indexes().length - 1;
+    if (val === 'empty') {
+      table.column(totalColIdx).search('^0$', true, false).draw();
+    } else {
+      table.column(totalColIdx).search('', true, false).draw();
+    }
+  }
+
+  // Aplicar filtro vindo do sino (only_empty=1 na URL)
+  try {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('only_empty') === '1') {
+      $('#orders-only-empty-filter').val('empty');
+    }
+  } catch (e) { }
+
+  // Eventos
+  $(document).on('change', '#orders-only-empty-filter', function(){
+    applyOnlyEmptyFilter();
+    // Atualizar a URL sem recarregar
+    try {
+      var url = new URL(window.location.href);
+      var val = $('#orders-only-empty-filter').val();
+      if (val === 'empty') {
+        url.searchParams.set('only_empty', '1');
+      } else {
+        url.searchParams.delete('only_empty');
+      }
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {}
+  });
+
+  // Aplicar no carregamento inicial
+  applyOnlyEmptyFilter();
+
   // Inicializar tooltips
   var tooltipTriggerList = [].slice.call(
     document.querySelectorAll('[data-bs-toggle="tooltip"]')
