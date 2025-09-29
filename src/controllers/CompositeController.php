@@ -217,11 +217,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         case 'get_composite_by_product':
             // Para produtos compostos: buscar assembly pelo composite_product_id
             $productId = (int)$_GET['product_id'];
-            $sql = "SELECT a.*, t.nome as composite_tipo_name, u.name as created_by_name
+            $sql = "SELECT a.*, t.nome as composite_tipo_name, u.name as created_by_name, p.destination as composite_destination
                     FROM assemblies a
                     LEFT JOIN composite_templates ct ON a.template_id = ct.id
                     LEFT JOIN tipos t ON ct.tipo_id = t.id
                     LEFT JOIN users u ON a.created_by = u.id
+                    LEFT JOIN products p ON a.composite_product_id = p.id
                     WHERE a.composite_product_id = :product_id AND a.status = 'finalized'";
             $stmt = Database::getInstance()->getConnection()->prepare($sql);
             $stmt->execute(['product_id' => $productId]);
@@ -251,11 +252,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             
             if ($result && $result['parent_composite_id']) {
                 // Buscar assembly pelo composite_product_id
-                $sql = "SELECT a.*, t.nome as composite_tipo_name, u.name as created_by_name
+                $sql = "SELECT a.*, t.nome as composite_tipo_name, u.name as created_by_name, p.destination as composite_destination
                         FROM assemblies a
                         LEFT JOIN composite_templates ct ON a.template_id = ct.id
                         LEFT JOIN tipos t ON ct.tipo_id = t.id
                         LEFT JOIN users u ON a.created_by = u.id
+                        LEFT JOIN products p ON a.composite_product_id = p.id
                         WHERE a.composite_product_id = :composite_product_id AND a.status = 'finalized'";
                 $stmt = Database::getInstance()->getConnection()->prepare($sql);
                 $stmt->execute(['composite_product_id' => $result['parent_composite_id']]);

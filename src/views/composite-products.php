@@ -61,13 +61,7 @@ function initializeCompositeProductsTable() {
                 orderable: false,
                 searchable: false,
                 render: function(data, type, row) {
-                    let buttons = `
-                        <button class="btn btn-sm btn-outline-primary" onclick="viewCompositeProduct(${row.id})" title="Detalhes">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-info" onclick="generateQR(${row.id})" title="QR Code">
-                            <i class="fas fa-qrcode"></i>
-                        </button>`;
+                    let buttons = ``;
                     
                     if (row.assembly_status === 'finalized') {
                         buttons += `

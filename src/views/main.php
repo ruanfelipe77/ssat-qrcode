@@ -133,11 +133,11 @@ $tipos = $tipoModel->getAll();
                                     <button class="btn btn-link text-dark p-0 print-qrcode" data-id="<?= $product['id'] ?>" title="Imprimir QR Code">
                                         <i class="fas fa-print fs-5"></i>
                                     </button>
-                                    <?php if ($product['status_name'] === 'in_composite'): ?>
-                                        <button class="btn btn-link text-dark p-0" onclick="viewCompositeRelation(<?= $product['parent_composite_id'] ?>, 'component')" title="Ver Produto Composto">
+                                    <?php if ($product['status_name'] === 'in_composite' && !empty($product['parent_composite_id'])): ?>
+                                        <button class="btn btn-link text-dark p-0" onclick="viewCompositeRelation(<?= $product['id'] ?>, 'component')" title="Ver Produto Composto">
                                             <i class="fas fa-cube fs-5"></i>
                                         </button>
-                                    <?php elseif (isset($product['is_composite']) && $product['is_composite']): ?>
+                                    <?php elseif (isset($product['is_composite']) && $product['is_composite'] == 1): ?>
                                         <button class="btn btn-link text-dark p-0" onclick="viewCompositeRelation(<?= $product['id'] ?>, 'composite')" title="Ver Componentes">
                                             <i class="fas fa-cubes fs-5"></i>
                                         </button>
@@ -312,7 +312,7 @@ function viewCompositeRelation(id, type) {
                     <div class="text-start">
                         <p><strong>Serial:</strong> ${data.assembly.composite_serial || 'N/A'}</p>
                         <p><strong>Produto:</strong> ${data.assembly.composite_tipo_name || 'N/A'}</p>
-                        <p><strong>Status:</strong> ${data.assembly.status || 'N/A'}</p>
+                        <p><strong>Status:</strong> ${data.assembly.composite_destination || 'N/A'}</p>
                         <p><strong>Montado em:</strong> ${data.assembly.created_at ? new Date(data.assembly.created_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                         <p><strong>Montado por:</strong> ${data.assembly.created_by_name || 'N/A'}</p>
                     </div>
@@ -354,7 +354,7 @@ function viewCompositeRelation(id, type) {
                 html: `
                     <div class="text-start">
                         <p><strong>Produto:</strong> ${data.assembly.composite_tipo_name || 'N/A'}</p>
-                        <p><strong>Status:</strong> ${data.assembly.status || 'N/A'}</p>
+                        <p><strong>Status:</strong> ${data.assembly.composite_destination || 'N/A'}</p>
                         <p><strong>Montado em:</strong> ${data.assembly.created_at ? new Date(data.assembly.created_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                         <p><strong>Montado por:</strong> ${data.assembly.created_by_name || 'N/A'}</p>
                         <h6 class="mt-3">Componentes:</h6>

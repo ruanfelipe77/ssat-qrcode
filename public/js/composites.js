@@ -1383,11 +1383,11 @@ function deleteAssembly(id) {
 
 function disassembleAssembly(assemblyId) {
   Swal.fire({
-    title: "Desmontar Produto?",
-    text: "Os componentes voltarão ao estoque. Esta ação não pode ser desfeita.",
+    title: "Desmontar e Excluir Produto?",
+    text: "Os componentes voltarão ao estoque e o produto composto será excluído permanentemente. Esta ação não pode ser desfeita.",
     icon: "warning",
     showCancelButton: true,
-    confirmButtonText: "Sim, desmontar",
+    confirmButtonText: "Sim, desmontar e excluir",
     cancelButtonText: "Cancelar",
     confirmButtonColor: "#d33",
   }).then((result) => {
@@ -1403,7 +1403,7 @@ function disassembleAssembly(assemblyId) {
           if (result.success) {
             Swal.fire({
               title: "Sucesso!",
-              text: "Produto desmontado!",
+              text: result.message || "Produto desmontado e excluído com sucesso!",
               icon: "success",
             });
             if (window.assembliesTable) window.assembliesTable.ajax.reload();

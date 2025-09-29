@@ -349,36 +349,20 @@ class Assembly
             $stmt = $this->conn->prepare($sql);
             $stmt->execute(['assembly_id' => $assemblyId]);
 
-            // Marcar produto composto como desmontado
+            // Excluir produto composto da tabela products
             if ($assembly['composite_product_id']) {
-                $sql = "UPDATE products 
-                        SET status = 'disassembled',
-                            updated_at = CURRENT_TIMESTAMP,
-                            disassembled_at = CURRENT_TIMESTAMP,
-                            disassembled_by = :user_id
-                        WHERE id = :id";
+                $sql = "DELETE FROM products WHERE id = :id";
                 $stmt = $this->conn->prepare($sql);
-                $stmt->execute([
-                    'id' => $assembly['composite_product_id'],
-                    'user_id' => $userId
-                ]);
+                $stmt->execute(['id' => $assembly['composite_product_id']]);
             }
 
-            // Atualizar assembly
-            $sql = "UPDATE assemblies 
-                    SET status = 'disassembled',
-                        updated_at = CURRENT_TIMESTAMP,
-                        disassembled_by = :user_id,
-                        disassembled_at = CURRENT_TIMESTAMP
-                    WHERE id = :id";
+            // Excluir assembly da tabela assemblies
+            $sql = "DELETE FROM assemblies WHERE id = :id";
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute([
-                'id' => $assemblyId,
-                'user_id' => $userId
-            ]);
+            $stmt->execute(['id' => $assemblyId]);
 
             $this->conn->commit();
-            return ['success' => true];
+            return ['success' => true, 'message' => 'Produto desmontado e excluído com sucesso'];
         } catch (PDOException $e) {
             $this->conn->rollBack();
             error_log("Error in Assembly::disassemble(): " . $e->getMessage());
