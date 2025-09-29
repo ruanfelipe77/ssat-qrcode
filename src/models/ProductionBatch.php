@@ -100,18 +100,39 @@ class ProductionBatch {
             // Verificar colunas opcionais na tabela products
             $hasStatusColumn = $this->checkIfColumnExists('products', 'status_id');
             $hasNotesColumn  = $this->checkIfColumnExists('products', 'notes');
+            $hasStatusField  = $this->checkIfColumnExists('products', 'status');
             
-            if ($hasStatusColumn && $hasNotesColumn) {
+            if ($hasStatusColumn && $hasNotesColumn && $hasStatusField) {
+                $query = "INSERT INTO products 
+                        (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, status_id, status, notes)
+                        VALUES 
+                        (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW(), :status_id, :status, :notes)";
+            } elseif ($hasStatusColumn && $hasStatusField && !$hasNotesColumn) {
+                $query = "INSERT INTO products 
+                        (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, status_id, status)
+                        VALUES 
+                        (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW(), :status_id, :status)";
+            } elseif ($hasStatusColumn && !$hasStatusField && $hasNotesColumn) {
                 $query = "INSERT INTO products 
                         (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, status_id, notes)
                         VALUES 
                         (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW(), :status_id, :notes)";
-            } elseif ($hasStatusColumn && !$hasNotesColumn) {
+            } elseif ($hasStatusColumn && !$hasStatusField && !$hasNotesColumn) {
                 $query = "INSERT INTO products 
                         (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, status_id)
                         VALUES 
                         (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW(), :status_id)";
-            } elseif (!$hasStatusColumn && $hasNotesColumn) {
+            } elseif (!$hasStatusColumn && $hasStatusField && $hasNotesColumn) {
+                $query = "INSERT INTO products 
+                        (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, status, notes)
+                        VALUES 
+                        (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW(), :status, :notes)";
+            } elseif (!$hasStatusColumn && $hasStatusField && !$hasNotesColumn) {
+                $query = "INSERT INTO products 
+                        (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, status)
+                        VALUES 
+                        (:tipo_id, :serial_number, :production_batch_id, :warranty, 'estoque', NOW(), :status)";
+            } elseif (!$hasStatusColumn && !$hasStatusField && $hasNotesColumn) {
                 $query = "INSERT INTO products 
                         (tipo_id, serial_number, production_batch_id, warranty, destination, sale_date, notes)
                         VALUES 
@@ -143,6 +164,10 @@ class ProductionBatch {
                 if ($hasStatusColumn) {
                     $status_id = $data['status_id'] ?? 1; // Default para "em_estoque"
                     $stmt->bindParam(":status_id", $status_id);
+                }
+                if ($hasStatusField) {
+                    $status = 'in_stock'; // Default para produtos em estoque
+                    $stmt->bindParam(":status", $status);
                 }
                 if ($hasNotesColumn) {
                     $stmt->bindParam(":notes", $notes);
