@@ -540,7 +540,12 @@ function activateTemplate(id) {
           }
         }
       ).fail(function (xhr, status, error) {
-        console.error("Erro na desmontagem:", status, error, xhr && xhr.responseText);
+        console.error(
+          "Erro na desmontagem:",
+          status,
+          error,
+          xhr && xhr.responseText
+        );
         Swal.fire({
           title: "Erro!",
           text: "Falha na comunicação com o servidor ao desmontar.",
@@ -630,7 +635,6 @@ function showTemplateRequirements() {
 
 function createAssemblyIfNeeded() {
   if (window.currentAssemblyId) {
-    console.log("Assembly já existe:", window.currentAssemblyId);
     return Promise.resolve(window.currentAssemblyId);
   }
 
@@ -640,8 +644,6 @@ function createAssemblyIfNeeded() {
     return Promise.reject("Nenhum template selecionado");
   }
 
-  console.log("Criando nova assembly para template:", templateId);
-
   return new Promise((resolve, reject) => {
     $.post(
       "src/controllers/CompositeController.php",
@@ -650,15 +652,12 @@ function createAssemblyIfNeeded() {
         template_id: templateId,
       },
       function (response) {
-        console.log("Resposta do servidor:", response);
         try {
           const result = parseResponse(response);
           if (result.success) {
             window.currentAssemblyId = result.assembly_id;
-            console.log("Assembly criada com sucesso, ID:", result.assembly_id);
             resolve(result.assembly_id);
           } else {
-            console.error("Erro do servidor:", result.message);
             reject(result.message || "Erro ao criar assembly");
           }
         } catch (e) {
@@ -681,7 +680,6 @@ function createAssemblyIfNeeded() {
 function saveDraftAssembly() {
   // Verificar se já está processando
   if ($("#saveDraftBtn").prop("disabled")) {
-    console.log("Já está processando, ignorando clique");
     return;
   }
 
@@ -690,17 +688,12 @@ function saveDraftAssembly() {
     .prop("disabled", true)
     .html('<i class="fas fa-spinner fa-spin me-1"></i>Salvando...');
 
-  console.log("Iniciando salvamento de progresso...");
-
   createAssemblyIfNeeded()
     .then((assemblyId) => {
-      console.log("Assembly criada/encontrada:", assemblyId);
-
       // Verificar se há serial para salvar
       const serial = $("#composite_serial").val().trim();
 
       if (serial) {
-        console.log("Salvando serial:", serial);
         // Salvar o serial na assembly
         return $.post("src/controllers/CompositeController.php", {
           action: "update_assembly_serial",
@@ -711,18 +704,15 @@ function saveDraftAssembly() {
           if (!result.success) {
             throw new Error(result.message || "Erro ao salvar serial");
           }
-          console.log("Serial salvo com sucesso");
           return assemblyId;
         });
       } else {
-        console.log("Nenhum serial informado, salvando apenas progresso");
         return assemblyId;
       }
     })
     .then((assemblyId) => {
       // Primeiro, remover componentes marcados para remoção
       if (window.componentsToRemove && window.componentsToRemove.length > 0) {
-        console.log("Removendo componentes:", window.componentsToRemove);
         return removeComponentsFromAssembly(assemblyId);
       } else {
         return assemblyId;
@@ -732,10 +722,8 @@ function saveDraftAssembly() {
       // Depois, salvar componentes temporários se houver
       const newComponents = tempComponents.filter((comp) => !comp.existing);
       if (newComponents.length > 0) {
-        console.log("Salvando componentes temporários:", newComponents);
         return saveTempComponents(assemblyId);
       } else {
-        console.log("Nenhum componente novo para salvar");
         return assemblyId;
       }
     })
@@ -754,18 +742,13 @@ function saveDraftAssembly() {
 
       // Recarregar tabela
       if (window.assembliesTable && window.assembliesTable.ajax) {
-        console.log("Recarregando tabela de assemblies...");
         window.assembliesTable.ajax.reload();
       } else if (
         typeof assembliesTable !== "undefined" &&
         assembliesTable.ajax
       ) {
-        console.log("Recarregando tabela local de assemblies...");
         assembliesTable.ajax.reload();
       } else {
-        console.log(
-          "Tabela de assemblies não encontrada, recarregando página..."
-        );
         // Como fallback, recarregar a página após um delay
         setTimeout(() => {
           window.location.reload();
@@ -818,7 +801,6 @@ function cancelAssembly() {
         id: window.currentAssemblyId,
       },
       function (response) {
-        console.log("Assembly cancelada:", window.currentAssemblyId);
         // Limpar independente do resultado
         window.currentAssemblyId = null;
       }
@@ -900,8 +882,6 @@ function addComponentToAssembly() {
     return;
   }
 
-  console.log("Adicionando componente ao modal:", productId, productText);
-
   // Adicionar ao array temporário
   tempComponents.push({
     product_id: productId,
@@ -947,9 +927,6 @@ function updateComponentsList() {
 
   const existingCount = tempComponents.filter((c) => c.existing).length;
   const newCount = tempComponents.filter((c) => !c.existing).length;
-  console.log(
-    `${existingCount} componente(s) existente(s), ${newCount} novo(s) no modal`
-  );
 }
 
 function removeTempComponent(tempId) {
@@ -964,11 +941,6 @@ function removeTempComponent(tempId) {
     window.currentAssemblyId
   ) {
     // Se é um componente existente e há assembly ativa, marcar para remoção
-    console.log(
-      "Marcando componente existente para remoção:",
-      componentToRemove.product_text
-    );
-
     // Adicionar à lista de componentes para remover
     if (!window.componentsToRemove) {
       window.componentsToRemove = [];
@@ -985,15 +957,7 @@ function saveTempComponents(assemblyId) {
   // Filtrar apenas componentes novos (não existentes)
   const newComponents = tempComponents.filter((comp) => !comp.existing);
 
-  console.log(
-    "Salvando",
-    newComponents.length,
-    "componentes novos para assembly",
-    assemblyId
-  );
-
   if (newComponents.length === 0) {
-    console.log("Nenhum componente novo para salvar");
     return Promise.resolve(assemblyId);
   }
 
@@ -1011,7 +975,6 @@ function saveTempComponents(assemblyId) {
           try {
             const result = parseResponse(response);
             if (result.success) {
-              console.log("Componente salvo:", component.product_text);
               resolve(result);
             } else {
               reject(new Error(result.message || "Erro ao salvar componente"));
@@ -1029,7 +992,6 @@ function saveTempComponents(assemblyId) {
   // Aguardar todos os componentes serem salvos
   return Promise.all(savePromises)
     .then(() => {
-      console.log("Todos os componentes temporários foram salvos");
       // Limpar array temporário
       tempComponents = [];
       return assemblyId;
@@ -1041,13 +1003,6 @@ function saveTempComponents(assemblyId) {
 }
 
 function removeComponentsFromAssembly(assemblyId) {
-  console.log(
-    "Removendo",
-    window.componentsToRemove.length,
-    "componente(s) da assembly",
-    assemblyId
-  );
-
   // Criar promises para remover cada componente
   const removePromises = window.componentsToRemove.map((productId) => {
     return new Promise((resolve, reject) => {
@@ -1062,7 +1017,6 @@ function removeComponentsFromAssembly(assemblyId) {
           try {
             const result = parseResponse(response);
             if (result.success) {
-              console.log("Componente removido:", productId);
               resolve(result);
             } else {
               reject(new Error(result.message || "Erro ao remover componente"));
@@ -1080,7 +1034,6 @@ function removeComponentsFromAssembly(assemblyId) {
   // Aguardar todos os componentes serem removidos
   return Promise.all(removePromises)
     .then(() => {
-      console.log("Todos os componentes foram removidos");
       // Limpar lista de remoções
       window.componentsToRemove = [];
       return assemblyId;
@@ -1092,15 +1045,8 @@ function removeComponentsFromAssembly(assemblyId) {
 }
 
 function loadExistingComponentsToTemp(components) {
-  console.log(
-    "Carregando componentes existentes para array temporário:",
-    components
-  );
-
-  // Limpar array temporário
   tempComponents = [];
 
-  // Adicionar componentes existentes ao array temporário
   if (components && components.length > 0) {
     components.forEach((component) => {
       tempComponents.push({
@@ -1112,26 +1058,17 @@ function loadExistingComponentsToTemp(components) {
     });
   }
 
-  // Atualizar lista visual
   updateComponentsList();
-
-  console.log(
-    `${tempComponents.length} componente(s) carregado(s) no array temporário`
-  );
 }
 
 function loadAssemblyComponents() {
   if (!window.currentAssemblyId) {
-    console.log("Nenhuma assembly ativa para carregar componentes");
     return;
   }
-
-  console.log("Carregando componentes da assembly:", window.currentAssemblyId);
 
   $.get(
     `src/controllers/CompositeController.php?action=get_assembly&id=${window.currentAssemblyId}`,
     function (data) {
-      console.log("Dados da assembly recebidos:", data);
       const components = data.components || [];
       let html = '<div class="list-group">';
 
@@ -1156,11 +1093,6 @@ function loadAssemblyComponents() {
 
       html += "</div>";
       $("#componentsList").html(html);
-
-      console.log(`${components.length} componente(s) carregado(s)`);
-
-      // Não precisa mais mostrar/esconder seção do serial
-      // O serial fica sempre visível para o usuário preencher quando quiser
     }
   ).fail(function (xhr, status, error) {
     console.error(
@@ -1210,16 +1142,10 @@ function finalizeAssembly() {
     return;
   }
 
-  console.log("Iniciando finalização da montagem...");
-
   createAssemblyIfNeeded()
     .then((assemblyId) => {
-      console.log("Assembly criada/encontrada:", assemblyId);
-
       // Verificar se há serial para salvar
       if (serial) {
-        console.log("Salvando serial:", serial);
-        // Salvar o serial na assembly
         return $.post("src/controllers/CompositeController.php", {
           action: "update_assembly_serial",
           assembly_id: assemblyId,
@@ -1229,7 +1155,6 @@ function finalizeAssembly() {
           if (!result.success) {
             throw new Error(result.message || "Erro ao salvar serial");
           }
-          console.log("Serial salvo com sucesso");
           return assemblyId;
         });
       } else {
@@ -1239,7 +1164,6 @@ function finalizeAssembly() {
     .then((assemblyId) => {
       // Primeiro, remover componentes marcados para remoção
       if (window.componentsToRemove && window.componentsToRemove.length > 0) {
-        console.log("Removendo componentes:", window.componentsToRemove);
         return removeComponentsFromAssembly(assemblyId);
       } else {
         return assemblyId;
@@ -1249,18 +1173,12 @@ function finalizeAssembly() {
       // Depois, salvar componentes temporários se houver
       const newComponents = tempComponents.filter((comp) => !comp.existing);
       if (newComponents.length > 0) {
-        console.log(
-          "Salvando componentes temporários antes de finalizar:",
-          newComponents
-        );
         return saveTempComponents(assemblyId);
       } else {
-        console.log("Nenhum componente novo para salvar");
         return assemblyId;
       }
     })
     .then((assemblyId) => {
-      console.log("Finalizando assembly:", assemblyId);
       return $.post("src/controllers/CompositeController.php", {
         action: "finalize_assembly",
         assembly_id: assemblyId,
@@ -1412,12 +1330,16 @@ function disassembleAssembly(assemblyId) {
           if (result.success) {
             Swal.fire({
               title: "Sucesso!",
-              text: result.message || "Produto desmontado e excluído com sucesso!",
+              text:
+                result.message || "Produto desmontado e excluído com sucesso!",
               icon: "success",
             });
             if (window.assembliesTable) {
               window.assembliesTable.ajax.reload();
-            } else if (typeof assembliesTable !== "undefined" && assembliesTable.ajax) {
+            } else if (
+              typeof assembliesTable !== "undefined" &&
+              assembliesTable.ajax
+            ) {
               assembliesTable.ajax.reload();
             }
 
@@ -1561,16 +1483,12 @@ function viewAssembly(id) {
 }
 
 function editAssembly(id) {
-  console.log("Editando assembly:", id);
-
   // Carregar dados da assembly
   $.get(
     `src/controllers/CompositeController.php?action=get_assembly&id=${id}`,
     function (data) {
       const assembly = data.assembly;
       const components = data.components;
-
-      console.log("Dados da assembly para edição:", assembly);
 
       // Definir assembly atual
       window.currentAssemblyId = id;
@@ -1581,7 +1499,6 @@ function editAssembly(id) {
       // Carregar serial se existir
       if (assembly.composite_serial) {
         $("#composite_serial").val(assembly.composite_serial);
-        console.log("Serial carregado:", assembly.composite_serial);
       }
 
       // Mostrar requisitos do template
@@ -1674,9 +1591,6 @@ $("#templateModal").on("hidden.bs.modal", function () {
 $("#assemblyModal").on("hidden.bs.modal", function () {
   // Só limpar formulário se não foi cancelado explicitamente ou se não foi fechado por sucesso
   if (!$(this).data("cancelled") && !$(this).data("success")) {
-    console.log(
-      "Modal fechado sem ação específica - apenas limpando formulário"
-    );
     // NUNCA deletar assembly automaticamente - apenas limpar formulário
     setTimeout(() => {
       // Limpar apenas o formulário, SEM deletar a assembly
@@ -1731,8 +1645,6 @@ window.removeComponentsFromAssembly = removeComponentsFromAssembly;
 
 // Função para resetar o modal quando abrir nova montagem
 function resetAssemblyModal() {
-  console.log("Resetando modal para nova montagem");
-
   // Resetar título
   $("#assemblyModal .modal-title").text("Nova Montagem");
 

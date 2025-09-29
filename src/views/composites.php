@@ -174,48 +174,51 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>1. Selecionar Template</h6>
-                        <div class="mb-3">
-                            <label for="assembly_template_id" class="form-label">Template *</label>
-                            <select class="form-select" id="assembly_template_id" onchange="loadTemplateForAssembly()">
-                                <option value="">Selecione um template...</option>
-                            </select>
-                        </div>
+                <style>
+                    /* Estilos discretos para manter o modal clean */
+                    #assemblyModal .section-title { font-weight: 600; font-size: 0.95rem; }
+                    #assemblyModal .scroll-pane { max-height: 260px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 6px; padding: 10px; background: #fff; }
+                    #assemblyModal .subtle { color: #6c757d; font-size: 0.85rem; }
+                </style>
 
-                        <div id="templateRequirements" class="mb-3" style="display: none;">
-                            <h6>Componentes Necessários</h6>
-                            <div id="requirementsList"></div>
-                        </div>
+                <!-- Linha superior com 3 campos lado a lado -->
+                <div class="row g-3 align-items-end mb-2">
+                    <div class="col-lg-4">
+                        <label for="assembly_template_id" class="form-label mb-1">Template *</label>
+                        <select class="form-select" id="assembly_template_id" onchange="showTemplateRequirements()">
+                            <option value="">Selecione um template...</option>
+                        </select>
                     </div>
-
-                    <div class="col-md-6">
-                        <h6>2. Adicionar Componentes</h6>
-                        <div class="mb-3">
-                            <label for="available_products" class="form-label">Produtos Disponíveis</label>
+                    <div class="col-lg-4">
+                        <label for="available_products" class="form-label mb-1">Produtos Disponíveis</label>
+                        <div class="d-flex gap-2">
                             <select class="form-select" id="available_products">
                                 <option value="">Selecione um produto...</option>
                             </select>
-                            <button type="button" class="btn btn-sm btn-success mt-2" onclick="addComponentToAssembly()">
-                                <i class="fas fa-plus me-1"></i>Adicionar
+                            <button type="button" class="btn btn-success" onclick="addComponentToAssembly()">
+                                <i class="fas fa-plus"></i>
                             </button>
                         </div>
-
-                        <div id="assemblyComponents">
-                            <h6>Componentes Adicionados</h6>
-                            <div id="componentsList"></div>
-                        </div>
+                        <div class="subtle mt-1">Selecione e clique em adicionar</div>
+                    </div>
+                    <div class="col-lg-4">
+                        <label for="composite_serial" class="form-label mb-1">Serial do Produto Final *</label>
+                        <input type="text" class="form-control" id="composite_serial" placeholder="Ex: CTRL-2025-001">
                     </div>
                 </div>
 
-                <div class="row mt-3" id="finalizeSection" style="display: none;">
-                    <div class="col-12">
-                        <hr>
-                        <h6>3. Finalizar Montagem</h6>
-                        <div class="mb-3">
-                            <label for="composite_serial" class="form-label">Serial do Produto Final *</label>
-                            <input type="text" class="form-control" id="composite_serial" placeholder="Ex: CTRL-2025-001">
+                <!-- Listas lado a lado com scroll -->
+                <div class="row g-4 mt-1">
+                    <div class="col-md-6">
+                        <div id="templateRequirements" style="display: none;">
+                            <div class="section-title mb-2">Componentes Necessários</div>
+                            <div id="requirementsList" class="scroll-pane"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="assemblyComponents">
+                            <div class="section-title mb-2">Componentes Adicionados</div>
+                            <div id="componentsList" class="scroll-pane"></div>
                         </div>
                     </div>
                 </div>

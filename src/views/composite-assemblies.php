@@ -38,9 +38,20 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <style>
+                    /* Aparência discreta e moderna */
+                    #assemblyModal .scroll-pane { max-height: 350px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 6px; padding: 10px; background: #fff; }
+                    #assemblyModal .modal-body { min-height: 500px;  }
+                </style>
                 <div class="row">
-                    <div class="col-md-6">
-                        <h6>1. Selecionar Template</h6>
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <label for="composite_serial" class="form-label">Número Serial*</label>
+                            <input type="text" class="form-control" id="composite_serial">
+                            <div class="form-text">Este será o serial único do produto montado</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
                         <div class="mb-3">
                             <label for="assembly_template_id" class="form-label">Template *</label>
                             <select class="form-select" id="assembly_template_id" onchange="showTemplateRequirements()">
@@ -50,43 +61,31 @@
 
                         <div id="templateRequirements" class="mb-3" style="display: none;">
                             <h6>Componentes Necessários</h6>
-                            <div id="requirementsList"></div>
+                            <div id="requirementsList" class="scroll-pane"></div>
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <h6>2. Adicionar Componentes</h6>
+                    <div class="col-md-4">
                         <div class="mb-3">
                             <label for="available_products" class="form-label">Produtos Disponíveis</label>
-                            <select class="form-select" id="available_products">
-                                <option value="">Selecione um produto...</option>
-                            </select>
-                            <button type="button" class="btn btn-sm btn-success mt-2" onclick="addComponentToAssembly()">
-                                <i class="fas fa-plus me-1"></i>Adicionar
-                            </button>
+                            <div class="d-flex gap-2 align-items-stretch">
+                                <select class="form-select" id="available_products">
+                                    <option value="">Selecione um produto...</option>
+                                </select>
+                                <button type="button" class="btn btn-success" onclick="addComponentToAssembly()" title="Adicionar">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div id="assemblyComponents">
                             <h6>Componentes Adicionados</h6>
-                            <div id="componentsList"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <hr>
-                        <h6>3. Serial do Produto</h6>
-                        <div class="mb-3">
-                            <label for="composite_serial" class="form-label">Número Serial*</label>
-                            <input type="text" class="form-control" id="composite_serial">
-                            <div class="form-text">Este será o serial único do produto montado</div>
+                            <div id="componentsList" class="scroll-pane"></div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="cancelAssembly()">Cancelar</button>
                 <button type="button" class="btn btn-warning" id="saveDraftBtn" onclick="saveDraftAssembly()" disabled>
                     <i class="fas fa-save me-1"></i>Salvar Progresso
                 </button>
