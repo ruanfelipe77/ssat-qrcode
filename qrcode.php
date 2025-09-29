@@ -198,14 +198,12 @@ $missingAny      = $missingSerial || $missingSale || $missingDest || $missingWar
   <div class="d-flex flex-column" id="wrapper">
     <div id="page-content-wrapper" class="w-100">
       <?php include 'src/views/header.php'; ?>
-      <div class="container-fluid" style="margin-top:20px;">
+      <div class="container-fluid" style="margin-top:60px;">
         <?php if ($isComposite): ?>
-          <h2><i class="fas fa-cubes me-2"></i>Produto Composto</h2>
           
           <div class="alert alert-info d-flex align-items-center" role="alert">
-            <i class="fas fa-info-circle me-2"></i>
             <div>
-              Este é um produto composto, montado a partir de componentes individuais.
+              <small>Este é um produto composto, montado a partir de componentes individuais.</small>
             </div>
           </div>
 
