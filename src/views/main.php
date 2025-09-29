@@ -298,7 +298,7 @@ $(document).on('click', '.view-product-notes', function() {
 function viewCompositeRelation(id, type) {
     if (type === 'component') {
         // Visualizar o produto composto que contém este componente
-        $.get(`src/controllers/CompositeController.php?action=get_assembly&id=${id}`, function(response) {
+        $.get(`src/controllers/CompositeController.php?action=get_parent_composite&component_id=${id}`, function(response) {
             const data = typeof response === 'string' ? JSON.parse(response) : response;
             
             if (!data.assembly) {
@@ -310,11 +310,11 @@ function viewCompositeRelation(id, type) {
                 title: `Produto Pai`,
                 html: `
                     <div class="text-start">
-                        <p><strong>Serial:</strong> ${data.assembly.composite_serial}</p>
-                        <p><strong>Produto:</strong> ${data.assembly.composite_tipo_name}</p>
-                        <p><strong>Status:</strong> ${data.assembly.status}</p>
-                        <p><strong>Montado em:</strong> ${new Date(data.assembly.created_at).toLocaleDateString('pt-BR')}</p>
-                        <p><strong>Montado por:</strong> ${data.assembly.created_by_name}</p>
+                        <p><strong>Serial:</strong> ${data.assembly.composite_serial || 'N/A'}</p>
+                        <p><strong>Produto:</strong> ${data.assembly.composite_tipo_name || 'N/A'}</p>
+                        <p><strong>Status:</strong> ${data.assembly.status || 'N/A'}</p>
+                        <p><strong>Montado em:</strong> ${data.assembly.created_at ? new Date(data.assembly.created_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                        <p><strong>Montado por:</strong> ${data.assembly.created_by_name || 'N/A'}</p>
                     </div>
                 `,
                 width: '500px'
@@ -324,8 +324,13 @@ function viewCompositeRelation(id, type) {
         });
     } else {
         // Visualizar os componentes deste produto composto
-        $.get(`src/controllers/CompositeController.php?action=get_assembly&id=${id}`, function(response) {
+        $.get(`src/controllers/CompositeController.php?action=get_composite_by_product&product_id=${id}`, function(response) {
             const data = typeof response === 'string' ? JSON.parse(response) : response;
+            
+            if (!data.assembly) {
+                Swal.fire('Erro!', 'Assembly não encontrada para este produto.', 'error');
+                return;
+            }
             
             let componentsHtml = '';
             if (data.components && data.components.length > 0) {
@@ -345,13 +350,13 @@ function viewCompositeRelation(id, type) {
             }
 
             Swal.fire({
-                title: `Componentes do Produto #${data.assembly.composite_serial}`,
+                title: `Componentes do Produto #${data.assembly.composite_serial || 'N/A'}`,
                 html: `
                     <div class="text-start">
-                        <p><strong>Produto:</strong> ${data.assembly.composite_tipo_name}</p>
-                        <p><strong>Status:</strong> ${data.assembly.status}</p>
-                        <p><strong>Montado em:</strong> ${new Date(data.assembly.created_at).toLocaleDateString('pt-BR')}</p>
-                        <p><strong>Montado por:</strong> ${data.assembly.created_by_name}</p>
+                        <p><strong>Produto:</strong> ${data.assembly.composite_tipo_name || 'N/A'}</p>
+                        <p><strong>Status:</strong> ${data.assembly.status || 'N/A'}</p>
+                        <p><strong>Montado em:</strong> ${data.assembly.created_at ? new Date(data.assembly.created_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                        <p><strong>Montado por:</strong> ${data.assembly.created_by_name || 'N/A'}</p>
                         <h6 class="mt-3">Componentes:</h6>
                         ${componentsHtml}
                     </div>

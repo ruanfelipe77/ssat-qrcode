@@ -214,6 +214,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ]);
             break;
 
+        case 'get_composite_by_product':
+            // Para produtos compostos: buscar assembly pelo composite_product_id
+            $productId = (int)$_GET['product_id'];
+            $sql = "SELECT a.*, t.nome as composite_tipo_name, u.name as created_by_name
+                    FROM assemblies a
+                    LEFT JOIN composite_templates ct ON a.template_id = ct.id
+                    LEFT JOIN tipos t ON ct.tipo_id = t.id
+                    LEFT JOIN users u ON a.created_by = u.id
+                    WHERE a.composite_product_id = :product_id AND a.status = 'finalized'";
+            $stmt = Database::getInstance()->getConnection()->prepare($sql);
+            $stmt->execute(['product_id' => $productId]);
+            $assembly = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($assembly) {
+                $components = $assemblyModel->getAssemblyComponents($assembly['id']);
+                echo json_encode([
+                    'assembly' => $assembly,
+                    'components' => $components
+                ]);
+            } else {
+                echo json_encode([
+                    'assembly' => false,
+                    'components' => []
+                ]);
+            }
+            break;
+
+        case 'get_parent_composite':
+            // Para componentes: buscar o produto composto pai
+            $componentId = (int)$_GET['component_id'];
+            $sql = "SELECT p.parent_composite_id FROM products p WHERE p.id = :component_id";
+            $stmt = Database::getInstance()->getConnection()->prepare($sql);
+            $stmt->execute(['component_id' => $componentId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result && $result['parent_composite_id']) {
+                // Buscar assembly pelo composite_product_id
+                $sql = "SELECT a.*, t.nome as composite_tipo_name, u.name as created_by_name
+                        FROM assemblies a
+                        LEFT JOIN composite_templates ct ON a.template_id = ct.id
+                        LEFT JOIN tipos t ON ct.tipo_id = t.id
+                        LEFT JOIN users u ON a.created_by = u.id
+                        WHERE a.composite_product_id = :composite_product_id AND a.status = 'finalized'";
+                $stmt = Database::getInstance()->getConnection()->prepare($sql);
+                $stmt->execute(['composite_product_id' => $result['parent_composite_id']]);
+                $assembly = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($assembly) {
+                    echo json_encode([
+                        'assembly' => $assembly,
+                        'components' => []
+                    ]);
+                } else {
+                    echo json_encode([
+                        'assembly' => false,
+                        'components' => []
+                    ]);
+                }
+            } else {
+                echo json_encode([
+                    'assembly' => false,
+                    'components' => []
+                ]);
+            }
+            break;
+
         case 'get_available_products':
             $tipoId = !empty($_GET['tipo_id']) ? (int)$_GET['tipo_id'] : null;
             
