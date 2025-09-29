@@ -84,6 +84,18 @@ if (!isset($_SESSION['user_id']) || !$_SESSION['user_id']) {
                 case 'audit':
                     include 'src/views/audit.php';
                     break;
+                case 'composites':
+                    include 'src/views/composites.php';
+                    break;
+                case 'composite-templates':
+                    include 'src/views/composite-templates.php';
+                    break;
+                case 'composite-assemblies':
+                    include 'src/views/composite-assemblies.php';
+                    break;
+                case 'composite-products':
+                    include 'src/views/composite-products.php';
+                    break;
                 default:
                     include 'src/views/batches.php'; // Default page agora é Lotes
             }

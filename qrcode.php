@@ -42,21 +42,60 @@ $conn = $db->getConnection();
 // Buscar produto por ID (preferido); caso contrário, usar dados do JSON
 $product = null;
 $orderNfe = null;
+$isComposite = false;
+$compositeComponents = [];
+$assemblyInfo = null;
+
 if ($id) {
-  $stmt = $conn->prepare('SELECT * FROM products WHERE id = :id');
+  // Buscar produto com informações do tipo
+  $stmt = $conn->prepare('SELECT p.*, t.nome as tipo_name, t.is_composite FROM products p LEFT JOIN tipos t ON p.tipo_id = t.id WHERE p.id = :id');
   $stmt->execute(['id' => $id]);
   $product = $stmt->fetch(PDO::FETCH_ASSOC);
-  // Tentar obter NFe do pedido associado, se houver coluna e vinculação
-  if ($product && !empty($product['production_order_id'])) {
-    try {
-      // Verificar se a coluna nfe existe na tabela de pedidos
-      $probe = $conn->prepare('SELECT nfe FROM sales_orders WHERE id = :oid LIMIT 1');
-      $probe->execute(['oid' => $product['production_order_id']]);
-      if ($row = $probe->fetch(PDO::FETCH_ASSOC)) {
-        $orderNfe = $row['nfe'] ?? null;
+  
+  if ($product) {
+    $isComposite = ($product['is_composite'] == 1);
+    
+    // Se for produto composto, buscar componentes
+    if ($isComposite) {
+      $stmt = $conn->prepare('
+        SELECT ac.*, p.serial_number as component_serial, t.nome as component_tipo_name,
+               a.created_at as assembly_date, u.name as assembled_by
+        FROM assemblies a
+        JOIN assembly_components ac ON a.id = ac.assembly_id
+        JOIN products p ON ac.component_product_id = p.id
+        JOIN tipos t ON p.tipo_id = t.id
+        LEFT JOIN users u ON a.created_by = u.id
+        WHERE a.composite_product_id = :product_id AND a.status = "finalized"
+        ORDER BY ac.added_at
+      ');
+      $stmt->execute(['product_id' => $id]);
+      $compositeComponents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      
+      // Buscar informações da assembly
+      $stmt = $conn->prepare('
+        SELECT a.*, ct.version as template_version, u.name as assembled_by
+        FROM assemblies a
+        LEFT JOIN composite_templates ct ON a.template_id = ct.id
+        LEFT JOIN users u ON a.created_by = u.id
+        WHERE a.composite_product_id = :product_id AND a.status = "finalized"
+        LIMIT 1
+      ');
+      $stmt->execute(['product_id' => $id]);
+      $assemblyInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    // Tentar obter NFe do pedido associado, se houver coluna e vinculação
+    if (!empty($product['production_order_id'])) {
+      try {
+        // Verificar se a coluna nfe existe na tabela de pedidos
+        $probe = $conn->prepare('SELECT nfe FROM sales_orders WHERE id = :oid LIMIT 1');
+        $probe->execute(['oid' => $product['production_order_id']]);
+        if ($row = $probe->fetch(PDO::FETCH_ASSOC)) {
+          $orderNfe = $row['nfe'] ?? null;
+        }
+      } catch (Throwable $e) {
+        // Silenciosamente ignorar se a coluna não existir
       }
-    } catch (Throwable $e) {
-      // Silenciosamente ignorar se a coluna não existir
     }
   }
 }
@@ -160,48 +199,166 @@ $missingAny      = $missingSerial || $missingSale || $missingDest || $missingWar
     <div id="page-content-wrapper" class="w-100">
       <?php include 'src/views/header.php'; ?>
       <div class="container-fluid" style="margin-top:20px;">
-        <h2>Informações do Produto</h2>
-
-        <?php if ($missingAny): ?>
-          <div class="alert alert-warning d-flex align-items-center" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>
+        <?php if ($isComposite): ?>
+          <h2><i class="fas fa-cubes me-2"></i>Produto Composto</h2>
+          
+          <div class="alert alert-info d-flex align-items-center" role="alert">
+            <i class="fas fa-info-circle me-2"></i>
             <div>
-              Este produto possui informações pendentes. Campos marcados como <span class="text-danger fw-bold">NÃO INFORMADO</span> devem ser preenchidos.
+              Este é um produto composto, montado a partir de componentes individuais.
             </div>
           </div>
-        <?php endif; ?>
 
-        <ul class="list-unstyled">
-          <li class="mb-1">
-            <strong>Produto:</strong>
-            <?= $produtoVal ?>
-          </li>
-          <li class="mb-1">
-            <strong>Número de Série:</strong>
-            <?php if ($missingSerial): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
-            <?= $serialVal ?>
-          </li>
-          <li class="mb-1">
-            <strong>Data da Venda:</strong>
-            <?php if ($missingSale): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
-            <?= $saleVal ?>
-          </li>
-          <li class="mb-1">
-            <strong>Destino:</strong>
-            <?php if ($missingDest): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
-            <?= $destVal ?>
-          </li>
-          <li class="mb-1">
-            <strong>Garantia:</strong>
-            <?php if ($missingWarranty): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
-            <?= $warrantyVal ?>
-          </li>
-          <li class="mb-1">
-            <strong>Nota Fiscal:</strong>
-            <?php if ($missingNfe): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
-            <?= $nfeVal ?>
-          </li>
-        </ul>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="mb-0">Informações Gerais</h5>
+                </div>
+                <div class="card-body">
+                  <ul class="list-unstyled">
+                    <li class="mb-2">
+                      <strong>Produto:</strong>
+                      <?= $produtoVal ?>
+                    </li>
+                    <li class="mb-2">
+                      <strong>Número de Série:</strong>
+                      <?php if ($missingSerial): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+                      <?= $serialVal ?>
+                    </li>
+                    <li class="mb-2">
+                      <strong>Data da Venda:</strong>
+                      <?php if ($missingSale): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+                      <?= $saleVal ?>
+                    </li>
+                    <li class="mb-2">
+                      <strong>Destino:</strong>
+                      <?php if ($missingDest): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+                      <?= $destVal ?>
+                    </li>
+                    <li class="mb-2">
+                      <strong>Garantia:</strong>
+                      <?php if ($missingWarranty): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+                      <?= $warrantyVal ?>
+                    </li>
+                    <?php if ($assemblyInfo): ?>
+                    <li class="mb-2">
+                      <strong>Montado em:</strong>
+                      <?= (new DateTime($assemblyInfo['created_at']))->format('d/m/Y H:i') ?>
+                    </li>
+                    <li class="mb-2">
+                      <strong>Montado por:</strong>
+                      <?= htmlspecialchars($assemblyInfo['assembled_by'] ?? 'N/A') ?>
+                    </li>
+                    <?php endif; ?>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="mb-0">Componentes (<?= count($compositeComponents) ?>)</h5>
+                </div>
+                <div class="card-body">
+                  <?php if (empty($compositeComponents)): ?>
+                    <p class="text-muted">Nenhum componente encontrado.</p>
+                  <?php else: ?>
+                    <div class="table-responsive">
+                      <table class="table table-sm">
+                        <thead>
+                          <tr>
+                            <th>Tipo</th>
+                            <th>Serial</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <?php foreach ($compositeComponents as $component): ?>
+                          <tr>
+                            <td><?= htmlspecialchars($component['component_tipo_name']) ?></td>
+                            <td>
+                              <a href="qrcode.php?id=<?= $component['component_product_id'] ?>" class="text-decoration-none">
+                                <?= htmlspecialchars($component['component_serial']) ?>
+                              </a>
+                            </td>
+                          </tr>
+                          <?php endforeach; ?>
+                        </tbody>
+                      </table>
+                    </div>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        <?php else: ?>
+          <h2><i class="fas fa-box me-2"></i>Informações do Produto</h2>
+
+          <?php if ($missingAny): ?>
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              <div>
+                Este produto possui informações pendentes. Campos marcados como <span class="text-danger fw-bold">NÃO INFORMADO</span> devem ser preenchidos.
+              </div>
+            </div>
+          <?php endif; ?>
+
+          <?php 
+          // Verificar se este produto individual faz parte de um composto
+          $parentComposite = null;
+          if ($product && $product['parent_composite_id']) {
+            $stmt = $conn->prepare('SELECT p.*, t.nome as tipo_name FROM products p LEFT JOIN tipos t ON p.tipo_id = t.id WHERE p.id = :id');
+            $stmt->execute(['id' => $product['parent_composite_id']]);
+            $parentComposite = $stmt->fetch(PDO::FETCH_ASSOC);
+          }
+          ?>
+
+          <?php if ($parentComposite): ?>
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+              <i class="fas fa-link me-2"></i>
+              <div>
+                Este componente faz parte do produto composto: 
+                <a href="qrcode.php?id=<?= $parentComposite['id'] ?>" class="alert-link">
+                  <?= htmlspecialchars($parentComposite['tipo_name']) ?> - <?= htmlspecialchars($parentComposite['serial_number']) ?>
+                </a>
+              </div>
+            </div>
+          <?php endif; ?>
+
+          <ul class="list-unstyled">
+            <li class="mb-1">
+              <strong>Produto:</strong>
+              <?= $produtoVal ?>
+            </li>
+            <li class="mb-1">
+              <strong>Número de Série:</strong>
+              <?php if ($missingSerial): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+              <?= $serialVal ?>
+            </li>
+            <li class="mb-1">
+              <strong>Data da Venda:</strong>
+              <?php if ($missingSale): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+              <?= $saleVal ?>
+            </li>
+            <li class="mb-1">
+              <strong>Destino:</strong>
+              <?php if ($missingDest): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+              <?= $destVal ?>
+            </li>
+            <li class="mb-1">
+              <strong>Garantia:</strong>
+              <?php if ($missingWarranty): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+              <?= $warrantyVal ?>
+            </li>
+            <li class="mb-1">
+              <strong>Nota Fiscal:</strong>
+              <?php if ($missingNfe): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
+              <?= $nfeVal ?>
+            </li>
+          </ul>
+        <?php endif; ?>
       </div>
     </div>
 
