@@ -4,6 +4,8 @@ window.assembliesTable = window.assembliesTable || null;
 window.compositeProductsTable = window.compositeProductsTable || null;
 window.currentAssemblyId = window.currentAssemblyId || null;
 window.templateItemCounter = window.templateItemCounter || 0;
+// Contador incremental para IDs temporários de componentes adicionados no modal
+window.tempComponentCounter = window.tempComponentCounter || 0;
 
 // Função auxiliar para tratar respostas JSON de forma segura
 function parseResponse(response) {
@@ -537,7 +539,14 @@ function activateTemplate(id) {
             Swal.fire("Erro!", "Erro ao ativar template.", "error");
           }
         }
-      );
+      ).fail(function (xhr, status, error) {
+        console.error("Erro na desmontagem:", status, error, xhr && xhr.responseText);
+        Swal.fire({
+          title: "Erro!",
+          text: "Falha na comunicação com o servidor ao desmontar.",
+          icon: "error",
+        });
+      });
     }
   });
 }
@@ -897,7 +906,7 @@ function addComponentToAssembly() {
   tempComponents.push({
     product_id: productId,
     product_text: productText,
-    temp_id: Date.now(), // ID temporário para remoção
+    temp_id: ++window.tempComponentCounter, // ID temporário incremental e único
   });
 
   // Atualizar lista visual
@@ -1399,16 +1408,31 @@ function disassembleAssembly(assemblyId) {
           assembly_id: assemblyId,
         },
         function (response) {
-          const result = JSON.parse(response);
+          const result = parseResponse(response);
           if (result.success) {
             Swal.fire({
               title: "Sucesso!",
               text: result.message || "Produto desmontado e excluído com sucesso!",
               icon: "success",
             });
-            if (window.assembliesTable) window.assembliesTable.ajax.reload();
-            if (window.compositeProductsTable)
+            if (window.assembliesTable) {
+              window.assembliesTable.ajax.reload();
+            } else if (typeof assembliesTable !== "undefined" && assembliesTable.ajax) {
+              assembliesTable.ajax.reload();
+            }
+
+            if (window.compositeProductsTable) {
               window.compositeProductsTable.ajax.reload();
+            } else if (
+              typeof compositeProductsTable !== "undefined" &&
+              compositeProductsTable &&
+              compositeProductsTable.ajax
+            ) {
+              compositeProductsTable.ajax.reload();
+            } else {
+              // Como fallback final, recarregar a página
+              setTimeout(() => window.location.reload(), 500);
+            }
           } else {
             Swal.fire({
               title: "Erro!",
