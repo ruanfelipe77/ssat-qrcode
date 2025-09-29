@@ -81,11 +81,17 @@ $tipos = $tipoModel->getAll();
                             </td>
                             <td><?= $product['tipo_name'] ?></td>
                             <td>
-                                <span class="badge d-flex align-items-center" 
-                                      style="background-color: <?= $product['status_color'] ?>; width: fit-content;">
-                                    <i class="<?= $product['status_icon'] ?> me-2"></i>
-                                    <?= ucfirst(str_replace('_', ' ', $product['status_name'])) ?>
-                                </span>
+                                <?php if ($product['status_name'] === 'in_composite'): ?>
+                                    <span class="badge bg-info d-flex align-items-center" style="width: fit-content;">
+                                        <i class="fas fa-cube me-2"></i>Composição
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge d-flex align-items-center" 
+                                          style="background-color: <?= $product['status_color'] ?>; width: fit-content;">
+                                        <i class="<?= $product['status_icon'] ?> me-2"></i>
+                                        <?= ucfirst(str_replace('_', ' ', $product['status_name'])) ?>
+                                    </span>
+                                <?php endif; ?>
                             </td>
                             <td><?= $product['serial_number'] ?></td>
                             <td>
@@ -127,6 +133,15 @@ $tipos = $tipoModel->getAll();
                                     <button class="btn btn-link text-dark p-0 print-qrcode" data-id="<?= $product['id'] ?>" title="Imprimir QR Code">
                                         <i class="fas fa-print fs-5"></i>
                                     </button>
+                                    <?php if ($product['status_name'] === 'in_composite'): ?>
+                                        <button class="btn btn-link text-dark p-0" onclick="viewCompositeRelation(<?= $product['parent_composite_id'] ?>, 'component')" title="Ver Produto Composto">
+                                            <i class="fas fa-cube fs-5"></i>
+                                        </button>
+                                    <?php elseif (isset($product['is_composite']) && $product['is_composite']): ?>
+                                        <button class="btn btn-link text-dark p-0" onclick="viewCompositeRelation(<?= $product['id'] ?>, 'composite')" title="Ver Componentes">
+                                            <i class="fas fa-cubes fs-5"></i>
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                             <!-- Hidden status slug for reliable filtering -->
@@ -196,7 +211,27 @@ var table = $('#mcp-table').DataTable({
     ],
     responsive: true,
     language: {
-        url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json"
+        "sEmptyTable": "Nenhum registro encontrado",
+        "sInfo": "Mostrando de _START_ até _END_ de _TOTAL_ registros",
+        "sInfoEmpty": "Mostrando 0 até 0 de 0 registros",
+        "sInfoFiltered": "(Filtrados de _MAX_ registros)",
+        "sInfoPostFix": "",
+        "sInfoThousands": ".",
+        "sLengthMenu": "_MENU_ resultados por página",
+        "sLoadingRecords": "Carregando...",
+        "sProcessing": "Processando...",
+        "sZeroRecords": "Nenhum registro encontrado",
+        "sSearch": "Pesquisar",
+        "oPaginate": {
+            "sNext": "Próximo",
+            "sPrevious": "Anterior",
+            "sFirst": "Primeiro",
+            "sLast": "Último"
+        },
+        "oAria": {
+            "sSortAscending": ": Ordenar colunas de forma ascendente",
+            "sSortDescending": ": Ordenar colunas de forma descendente"
+        }
     },
     dom: "frtip",
     order: [[0, 'desc']], // Ordenar por Lote (mais recente primeiro)
@@ -258,4 +293,74 @@ $(document).on('click', '.view-product-notes', function() {
   const modal = new bootstrap.Modal(document.getElementById('productNotesModal'));
   modal.show();
 });
+
+// Função para visualizar relação de produtos compostos
+function viewCompositeRelation(id, type) {
+    if (type === 'component') {
+        // Visualizar o produto composto que contém este componente
+        $.get(`src/controllers/CompositeController.php?action=get_assembly&id=${id}`, function(response) {
+            const data = typeof response === 'string' ? JSON.parse(response) : response;
+            
+            if (!data.assembly) {
+                Swal.fire('Erro!', 'Produto composto não encontrado.', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: `Produto Pai`,
+                html: `
+                    <div class="text-start">
+                        <p><strong>Serial:</strong> ${data.assembly.composite_serial}</p>
+                        <p><strong>Produto:</strong> ${data.assembly.composite_tipo_name}</p>
+                        <p><strong>Status:</strong> ${data.assembly.status}</p>
+                        <p><strong>Montado em:</strong> ${new Date(data.assembly.created_at).toLocaleDateString('pt-BR')}</p>
+                        <p><strong>Montado por:</strong> ${data.assembly.created_by_name}</p>
+                    </div>
+                `,
+                width: '500px'
+            });
+        }).fail(function() {
+            Swal.fire('Erro!', 'Erro ao carregar informações do produto composto.', 'error');
+        });
+    } else {
+        // Visualizar os componentes deste produto composto
+        $.get(`src/controllers/CompositeController.php?action=get_assembly&id=${id}`, function(response) {
+            const data = typeof response === 'string' ? JSON.parse(response) : response;
+            
+            let componentsHtml = '';
+            if (data.components && data.components.length > 0) {
+                componentsHtml = '<div class="list-group mt-3">';
+                data.components.forEach(comp => {
+                    componentsHtml += `
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">${comp.component_tipo_name}</h6>
+                                <small>${comp.component_serial}</small>
+                            </div>
+                        </div>`;
+                });
+                componentsHtml += '</div>';
+            } else {
+                componentsHtml = '<p class="text-muted">Nenhum componente encontrado.</p>';
+            }
+
+            Swal.fire({
+                title: `Componentes do Produto #${data.assembly.composite_serial}`,
+                html: `
+                    <div class="text-start">
+                        <p><strong>Produto:</strong> ${data.assembly.composite_tipo_name}</p>
+                        <p><strong>Status:</strong> ${data.assembly.status}</p>
+                        <p><strong>Montado em:</strong> ${new Date(data.assembly.created_at).toLocaleDateString('pt-BR')}</p>
+                        <p><strong>Montado por:</strong> ${data.assembly.created_by_name}</p>
+                        <h6 class="mt-3">Componentes:</h6>
+                        ${componentsHtml}
+                    </div>
+                `,
+                width: '600px'
+            });
+        }).fail(function() {
+            Swal.fire('Erro!', 'Erro ao carregar componentes do produto.', 'error');
+        });
+    }
+}
 </script>

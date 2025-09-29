@@ -9,6 +9,18 @@ class Assembly
         $this->conn = $db;
     }
 
+    // Verifica se uma coluna existe na tabela (para compatibilidade com diferentes esquemas)
+    private function checkIfColumnExists($table, $column) {
+        try {
+            $sql = "SELECT `{$column}` FROM `{$table}` LIMIT 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return true;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
     public function getAll()
     {
         try {
@@ -262,14 +274,21 @@ class Assembly
                 'composite_product_id' => $compositeProductId
             ]);
 
-            // Atualizar status dos componentes para 'in_composite'
+            // Atualizar status dos componentes para 'in_composite' (+ status_id = 7 quando existir)
+            $hasStatusId = $this->checkIfColumnExists('products', 'status_id');
+            $setParts = [
+                "p.status = 'in_composite'",
+                "p.parent_composite_id = :composite_product_id",
+                "p.updated_at = CURRENT_TIMESTAMP"
+            ];
+            if ($hasStatusId) {
+                $setParts[] = "p.status_id = 7"; // 'Em composição'
+            }
             $sql = "UPDATE products p
                     JOIN assembly_components ac ON p.id = ac.component_product_id
-                    SET p.status = 'in_composite',
-                        p.parent_composite_id = :composite_product_id,
-                        p.updated_at = CURRENT_TIMESTAMP
+                    SET " . implode(', ', $setParts) . "
                     WHERE ac.assembly_id = :assembly_id";
-            
+
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([
                 'assembly_id' => $assemblyId,
@@ -307,14 +326,21 @@ class Assembly
             $stmt->execute(['assembly_id' => $assemblyId]);
             $components = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Liberar componentes
+            // Liberar componentes (voltar para in_stock e status_id = 1 quando existir)
+            $hasStatusId = $this->checkIfColumnExists('products', 'status_id');
+            $setParts = [
+                "p.status = 'in_stock'",
+                "p.parent_composite_id = NULL",
+                "p.updated_at = CURRENT_TIMESTAMP"
+            ];
+            if ($hasStatusId) {
+                $setParts[] = "p.status_id = 1"; // 'Em estoque'
+            }
             $sql = "UPDATE products p
                     JOIN assembly_components ac ON p.id = ac.component_product_id
-                    SET p.status = 'in_stock',
-                        p.parent_composite_id = NULL,
-                        p.updated_at = CURRENT_TIMESTAMP
+                    SET " . implode(', ', $setParts) . "
                     WHERE ac.assembly_id = :assembly_id";
-            
+
             $stmt = $this->conn->prepare($sql);
             $stmt->execute(['assembly_id' => $assemblyId]);
 

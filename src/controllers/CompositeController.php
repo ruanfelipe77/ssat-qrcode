@@ -220,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $sql = "SELECT p.id, p.serial_number, p.warranty, t.nome as tipo_name
                     FROM products p
                     JOIN tipos t ON p.tipo_id = t.id
-                    WHERE p.status = 'in_stock' 
+                    WHERE p.status NOT IN ('in_composite', 'disassembled', 'defective')
                     AND p.parent_composite_id IS NULL
                     AND t.is_composite = 0";
             

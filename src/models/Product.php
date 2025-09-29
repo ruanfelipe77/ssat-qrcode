@@ -28,6 +28,7 @@ class Product
             $hasOrderColumn = $this->checkIfColumnExists('products', 'production_order_id');
             $hasStatusColumn = $this->checkIfColumnExists('products', 'status_id');
             $hasNotesColumn  = $this->checkIfColumnExists('products', 'notes');
+            $hasParentCompositeColumn = $this->checkIfColumnExists('products', 'parent_composite_id');
             
             
             if ($hasBatchColumn && $hasOrderColumn && $hasStatusColumn) {
@@ -39,12 +40,23 @@ class Product
                                p.warranty, 
                                " . ($hasNotesColumn ? "p.notes, " : "NULL as notes, ") . "
                                p.status_id,
-                               p.status,
+                               COALESCE(p.status, 'in_stock') as status,
+                               " . ($hasParentCompositeColumn ? "p.parent_composite_id, " : "NULL as parent_composite_id, ") . "
                                COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
+                               CASE 
+                                   WHEN EXISTS(SELECT 1 FROM assemblies a WHERE a.composite_product_id = p.id AND a.status = 'finalized') THEN 1
+                                   ELSE 0
+                               END as is_composite,
                                COALESCE(pb.batch_number, 'Sem Lote') as batch_number,
                                COALESCE(so.order_number, '') AS pp_number,
-                               COALESCE(ps.name, 'em_estoque') as status_name,
-                               COALESCE(ps.color, '#198754') as status_color,
+                               CASE 
+                                   WHEN p.status = 'in_composite' OR ps.name = 'em_composicao' THEN 'in_composite'
+                                   ELSE COALESCE(ps.name, 'em_estoque')
+                               END as status_name,
+                               CASE 
+                                   WHEN p.status = 'in_composite' OR ps.name = 'em_composicao' THEN '#c65cff'
+                                   ELSE COALESCE(ps.color, '#198754')
+                               END as status_color,
                                CASE 
                                    WHEN p.destination = 'estoque' THEN 'Em Estoque'
                                    WHEN c.name IS NOT NULL THEN c.name
@@ -69,11 +81,27 @@ class Product
                                p.warranty, 
                                " . ($hasNotesColumn ? "p.notes, " : "NULL as notes, ") . "
                                NULL as status_id,
+                               COALESCE(p.status, 'in_stock') as status,
+                               " . ($hasParentCompositeColumn ? "p.parent_composite_id, " : "NULL as parent_composite_id, ") . "
                                COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
+                               CASE 
+                                   WHEN EXISTS(SELECT 1 FROM assemblies a WHERE a.composite_product_id = p.id AND a.status = 'finalized') THEN 1
+                                   ELSE 0
+                               END as is_composite,
                                'Sem Lote' as batch_number,
                                '' AS pp_number,
-                               'em_estoque' as status_name,
-                               '#198754' as status_color,
+                               CASE 
+                                   WHEN p.status = 'in_composite' THEN 'in_composite'
+                                   ELSE 'em_estoque'
+                               END as status_name,
+                               CASE 
+                                   WHEN p.status = 'in_composite' THEN '#c65cff'
+                                   ELSE '#198754'
+                               END as status_color,
+                               CASE 
+                                   WHEN p.status = 'in_composite' THEN 'fas fa-cube'
+                                   ELSE 'fas fa-check-circle'
+                               END as status_icon,
                                CASE 
                                    WHEN p.destination = 'estoque' THEN 'Em Estoque'
                                    WHEN c.name IS NOT NULL THEN c.name
@@ -91,10 +119,16 @@ class Product
             
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
+            // Debug: log da query e resultado
+            error_log("Product::getAll() SQL: " . $sql);
+            error_log("Product::getAll() Result count: " . count($result));
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("Error in Product::getAll(): " . $e->getMessage());
+            error_log("SQL that failed: " . $sql);
             return [];
         }
     }
