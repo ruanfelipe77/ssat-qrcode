@@ -53,8 +53,8 @@ if ($qrPixels < 150) { $qrPixels = 150; }
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     @page {
-      size: A4 portrait;
-      margin: 10mm;
+      size: 100mm 20mm;
+      margin: 0;
     }
     * { box-sizing: border-box; }
     html, body {
@@ -70,6 +70,7 @@ if ($qrPixels < 150) { $qrPixels = 150; }
       grid-auto-rows: 20mm;
       gap: <?= number_format($gapMm, 2, '.', '') ?>mm;
       width: fit-content;
+      margin-left: 1mm; /* pequena margem para centralizar melhor */
     }
     /* Cada etiqueta 20x20mm */
     .label {
@@ -84,6 +85,10 @@ if ($qrPixels < 150) { $qrPixels = 150; }
       padding: 0; /* sem padding para respeitar a área 20x20 */
       overflow: hidden;
     }
+    /* Compensação progressiva para deslocamento da impressora */
+    .label:nth-child(5n-2) { margin-left: 0.5mm; } /* 3ª posição de cada linha (3, 8, 13...) */
+    .label:nth-child(5n-1) { margin-left: 1.0mm; } /* 4ª posição de cada linha (4, 9, 14...) */
+    .label:nth-child(5n) { margin-left: 1.5mm; } /* 5ª posição de cada linha (5, 10, 15...) */
     /* Área do serial (4mm de altura) */
     .serial {
       height: 4mm;
