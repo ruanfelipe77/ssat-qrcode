@@ -27,9 +27,15 @@ class Audit
             $stmt->bindValue(':details', !empty($details) ? json_encode($details, JSON_UNESCAPED_UNICODE) : null);
             $stmt->bindValue(':ip', $ip);
             $stmt->bindValue(':user_agent', $ua);
-            $stmt->execute();
+            
+            $result = $stmt->execute();
+            
         } catch (Throwable $e) {
             error_log('Audit log error: ' . $e->getMessage());
+            error_log('Audit log error SQL: ' . ($sql ?? 'SQL não definido'));
+            error_log('Audit log error dados: Action=' . $action . ', EntityType=' . $entityType . ', EntityId=' . $entityId);
+            // Log adicional para debug online vs local
+            error_log('Audit log debug - User ID: ' . ($userId ?? 'null') . ', Session status: ' . session_status());
         }
     }
 }
