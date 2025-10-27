@@ -154,8 +154,8 @@ $statuses = $statusModel->getActive();
 
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <label for="serial_start" class="form-label">Número Inicial (automático)</label>
-                            <input type="number" class="form-control" id="serial_start" name="serial_start" required readonly>
+                            <label for="serial_start" class="form-label">Número Inicial (sugerido)</label>
+                            <input type="number" class="form-control" id="serial_start" name="serial_start" required>
                             <div class="invalid-feedback">
                                 Por favor, informe o número inicial.
                             </div>

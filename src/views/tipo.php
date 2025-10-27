@@ -57,7 +57,7 @@ $(document).on('click', '#add-produto', function () {
     form.removeClass('was-validated');
     form[0].reset();
     $('#action_tipo').val('add');
-    $('#id').val('');
+    $('#tipoForm [name="tipo_id"]').val('');
     $('.modal-title-text').text('Adicionar Tipo de Produto');
     $('.btn-acao').html('<i class="fas fa-save me-2"></i>Salvar');
     const modal = new bootstrap.Modal(document.getElementById('tipoModal'));
@@ -67,14 +67,18 @@ $(document).on('click', '#add-produto', function () {
 // Abrir modal para EDITAR tipo
 $(document).on('click', '.edit-tipo', function () {
     const id = $(this).data('id');
+    console.log('ID do botão clicado:', id);
     $.get('src/controllers/TipoController.php', { id }, function (resp) {
+        console.log('Resposta do GET:', resp);
         const tipo = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+        console.log('Dados do tipo:', tipo);
         const form = $('#tipoForm');
         form.removeClass('was-validated');
-        form[0].reset();
+        // Não usar reset(), preencher campos diretamente
         $('#action_tipo').val('edit');
-        $('#id').val(tipo.id);
+        $('#tipoForm [name="tipo_id"]').val(tipo.id);
         $('#nome').val(tipo.nome);
+        console.log('Valores definidos - ID:', $('#tipoForm [name="tipo_id"]').val(), 'Nome:', $('#nome').val());
         $('.modal-title-text').text('Editar Tipo de Produto');
         $('.btn-acao').html('<i class="fas fa-save me-2"></i>Atualizar');
         const modal = new bootstrap.Modal(document.getElementById('tipoModal'));
@@ -94,17 +98,32 @@ $(document).on('submit', '#tipoForm', function (e) {
         return;
     }
     const data = $(form).serialize();
+    console.log('Dados sendo enviados:', data);
     $.post('src/controllers/TipoController.php', data, function (resp) {
-        const res = (typeof resp === 'string') ? JSON.parse(resp) : resp;
-        if (res.success) {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('tipoModal'));
-            if (modal) modal.hide();
-            Swal.fire({ title: 'Sucesso', text: 'Registro salvo com sucesso!', icon: 'success' })
-                .then(() => location.reload());
-        } else {
-            Swal.fire({ title: 'Erro', text: res.message || 'Falha ao salvar.', icon: 'error' });
+        console.log('Resposta raw do servidor:', resp);
+        console.log('Tipo da resposta:', typeof resp);
+        
+        try {
+            const res = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+            console.log('Resposta parseada:', res);
+            
+            if (res.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('tipoModal'));
+                if (modal) modal.hide();
+                Swal.fire({ title: 'Sucesso', text: 'Registro salvo com sucesso!', icon: 'success' })
+                    .then(() => location.reload());
+            } else {
+                Swal.fire({ title: 'Erro', text: res.message || 'Falha ao salvar.', icon: 'error' });
+            }
+        } catch (e) {
+            console.error('Erro ao processar resposta:', e);
+            console.log('Resposta que causou erro:', resp);
+            console.log('Tamanho da resposta:', resp.length);
+            console.log('Primeiros 500 caracteres:', resp.substring(0, 500));
+            Swal.fire({ title: 'Erro', text: 'Resposta inválida do servidor.', icon: 'error' });
         }
-    }).fail(function(){
+    }).fail(function(xhr, status, error){
+        console.error('Erro na requisição:', { xhr, status, error });
         Swal.fire({ title: 'Erro', text: 'Falha na comunicação com o servidor.', icon: 'error' });
     });
 });
@@ -138,27 +157,29 @@ $(document).on('click', '.delete-tipo', function () {
     });
 });
 
-// Remova qualquer inicialização anterior do DataTable
-var existingTable = $('#tipos-table').DataTable();
-if (existingTable) {
-    existingTable.destroy();
-}
+// Aguarda o DOM estar pronto
+$(document).ready(function() {
+    // Verifica se já existe uma instância do DataTable antes de tentar destruir
+    if ($.fn.DataTable.isDataTable('#tipos-table')) {
+        $('#tipos-table').DataTable().destroy();
+    }
 
-// Limpe os eventos anteriores
-$('#tipos-table').off();
+    // Limpe os eventos anteriores
+    $('#tipos-table').off();
 
-// Inicialize o DataTable
-var table = $('#tipos-table').DataTable({
-    pagingType: "full_numbers",
-    lengthMenu: [
-        [10, 25, 50, -1],
-        [10, 25, 50, "Todos"]
-    ],
-    responsive: true,
-    language: {
-        url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json"
-    },
-    dom: "frtip",
-    destroy: true // Permite reinicialização
+    // Inicialize o DataTable
+    var table = $('#tipos-table').DataTable({
+        pagingType: "full_numbers",
+        lengthMenu: [
+            [10, 25, 50, -1],
+            [10, 25, 50, "Todos"]
+        ],
+        responsive: true,
+        language: {
+            url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json"
+        },
+        dom: "frtip",
+        destroy: true // Permite reinicialização
+    });
 });
 </script>

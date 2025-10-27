@@ -12,7 +12,7 @@
             <div class="modal-body">
                 <form id="tipoForm" class="needs-validation" novalidate>
                     <input type="hidden" id="action_tipo" name="action_tipo">
-                    <input type="hidden" id="id" name="id">
+                    <input type="hidden" id="tipo_id" name="tipo_id">
                     
                     <div class="mb-3">
                         <label for="nome" class="form-label">Nome do Produto</label>

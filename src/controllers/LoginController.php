@@ -1,4 +1,7 @@
 <?php
+// Configurar sessão para durar 8 horas (28800 segundos)
+ini_set('session.gc_maxlifetime', 28800);
+session_set_cookie_params(28800);
 session_start();
 require_once '../../database.php';
 require_once '../../src/models/Audit.php';

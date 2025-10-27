@@ -12,10 +12,13 @@ class Audit
             $userName = $_SESSION['user_name'] ?? null;
             $ip = $_SERVER['REMOTE_ADDR'] ?? null;
             $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            // Timestamp com horário atual do servidor
+            $occurredAt = (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
 
             $sql = "INSERT INTO audit_logs (occurred_at, user_id, user_name, action, entity_type, entity_id, details, ip, user_agent)
-                    VALUES (NOW(), :user_id, :user_name, :action, :entity_type, :entity_id, :details, :ip, :user_agent)";
+                    VALUES (:occurred_at, :user_id, :user_name, :action, :entity_type, :entity_id, :details, :ip, :user_agent)";
             $stmt = $db->prepare($sql);
+            $stmt->bindValue(':occurred_at', $occurredAt);
             $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
             $stmt->bindValue(':user_name', $userName);
             $stmt->bindValue(':action', $action);

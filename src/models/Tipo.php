@@ -26,7 +26,6 @@ class Tipo
     public function update($data)
     {
         $stmt = $this->conn->prepare('UPDATE tipos SET nome = :nome WHERE id = :id');
-        var_dump($stmt);
         return $stmt->execute([
             'id' => $data['id'],
             'nome' => $data['nome']

@@ -21,7 +21,7 @@ $(document).ready(function () {
     $("#batches-table").DataTable().destroy();
   }
 
-  // Helper: atualizar serial_start (readonly) e preview
+  // Helper: atualizar serial_start e preview
   function setSerialStart(val) {
     $("#serial_start").val(val);
     updateSerialPreview();
@@ -99,8 +99,8 @@ $(document).ready(function () {
     const modalElement = document.getElementById("batchModal");
     if (modalElement) {
       const modal = new bootstrap.Modal(modalElement);
-      // resetar campos do range
-      $("#serial_start").val("").prop("readonly", true);
+      // resetar campos do range (permite edição manual)
+      $("#serial_start").val("").prop("readonly", false);
       $("#quantity").val("");
       $("#serial_preview").val("");
       // buscar número inicial quando escolher o tipo (ou já se tiver selecionado)
@@ -385,11 +385,18 @@ $(document).ready(function () {
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
-        // Você pode implementar um endpoint para gerar PDF/ZIP; por ora, selecione manualmente e use "Imprimir Selecionados".
+        // Abrir tela de impressão com todos os produtos do lote
+        const printUrl = `src/controllers/LabelController.php?batch_id=${encodeURIComponent(
+          id
+        )}&dpi=300`;
+        window.open(printUrl, "_blank");
+
         Swal.fire({
-          title: "Em breve",
-          text: "Para imprimir em lote, selecione os itens e clique em 'Imprimir Selecionados'.",
-          icon: "info",
+          title: "Impressão Iniciada",
+          text: "Abrindo tela de impressão com todos os QR codes do lote...",
+          icon: "success",
+          timer: 1000,
+          showConfirmButton: false,
         });
       }
     });

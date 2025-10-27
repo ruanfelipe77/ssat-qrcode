@@ -1,15 +1,22 @@
 <?php
-require_once '../../database.php';
-require_once '../../src/models/Product.php';
+// Ajustar caminho base para funcionar a partir de src/controllers/
+$basePath = dirname(dirname(__DIR__));
+require_once $basePath . '/database.php';
+require_once $basePath . '/src/models/Product.php';
+
+// Debug: log dos parâmetros recebidos
+error_log("LabelController chamado com parâmetros: " . print_r($_GET, true));
 
 // Params:
 // - id: imprime etiqueta individual do produto
 // - order_id: imprime etiquetas de todos os produtos do pedido
+// - batch_id: imprime etiquetas de todos os produtos do lote
 // - ids: lista separada por vírgulas para imprimir etiquetas específicas (ex: ids=1,2,3)
 // - dpi (opcional): apenas para ajustar o tamanho do PNG gerado (CSS fixa 14mm); default 300
 
 $id = isset($_GET['id']) ? trim($_GET['id']) : null;
 $orderId = isset($_GET['order_id']) ? trim($_GET['order_id']) : null;
+$batchId = isset($_GET['batch_id']) ? trim($_GET['batch_id']) : null;
 $idsParam = isset($_GET['ids']) ? trim($_GET['ids']) : null;
 $dpi = isset($_GET['dpi']) ? max(96, min(600, (int)$_GET['dpi'])) : 300;
 // Offsets e espaçamento (mm) opcionais para ajuste fino na impressão
@@ -17,8 +24,14 @@ $mtMm = isset($_GET['mt_mm']) ? max(0, (float)$_GET['mt_mm']) : 0; // margem/off
 $mlMm = isset($_GET['ml_mm']) ? max(0, (float)$_GET['ml_mm']) : 0; // margem/offset esquerdo extra
 $gapMm = isset($_GET['gap_mm']) ? max(0, (float)$_GET['gap_mm']) : 0; // espaçamento entre etiquetas
 
-$db = Database::getInstance()->getConnection();
-$productModel = new Product($db);
+try {
+    $db = Database::getInstance()->getConnection();
+    $productModel = new Product($db);
+    error_log("LabelController: Database conectado com sucesso");
+} catch (Exception $e) {
+    error_log("LabelController: Erro ao conectar database: " . $e->getMessage());
+    die("Erro de conexão com o banco de dados");
+}
 
 $products = [];
 if ($id) {
@@ -26,6 +39,18 @@ if ($id) {
     if ($p) { $products = [$p]; }
 } elseif ($orderId) {
     $products = $productModel->getByOrderId($orderId);
+} elseif ($batchId) {
+    error_log("LabelController: Buscando produtos do lote ID: " . $batchId);
+    try {
+        $products = $productModel->getByBatchId($batchId);
+        error_log("LabelController: Encontrados " . count($products) . " produtos");
+        if (empty($products)) {
+            error_log("LabelController: AVISO - Nenhum produto encontrado para o lote " . $batchId);
+        }
+    } catch (Exception $e) {
+        error_log("LabelController: ERRO ao buscar produtos do lote: " . $e->getMessage());
+        $products = [];
+    }
 } elseif ($idsParam) {
     // Sanitizar e montar consulta IN
     $raw = array_filter(array_map('trim', explode(',', $idsParam)), function($v){ return $v !== ''; });

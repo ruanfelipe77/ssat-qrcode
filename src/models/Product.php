@@ -257,17 +257,49 @@ class Product
 
     public function getByBatchId($batchId)
     {
-        $sql = "SELECT p.*, 
-                       t.nome AS tipo_name,
-                       po.order_number AS pp_number
-                FROM products p 
-                JOIN tipos t ON p.tipo_id = t.id
-                LEFT JOIN production_orders po ON p.production_order_id = po.id
-                WHERE p.production_batch_id = ?
-                ORDER BY p.serial_number ASC";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$batchId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            // Verificar se a coluna production_batch_id existe
+            $hasBatchColumn = $this->checkIfColumnExists('products', 'production_batch_id');
+            error_log("Product::getByBatchId - Coluna production_batch_id existe: " . ($hasBatchColumn ? 'sim' : 'não'));
+            
+            if ($hasBatchColumn) {
+                $sql = "SELECT p.*, 
+                               t.nome AS tipo_name,
+                               '' AS pp_number
+                        FROM products p 
+                        LEFT JOIN tipos t ON p.tipo_id = t.id
+                        WHERE p.production_batch_id = ?
+                        ORDER BY p.serial_number ASC";
+            } else {
+                // Fallback: buscar por algum campo relacionado ao lote
+                error_log("Product::getByBatchId - Tentando buscar por batch_id alternativo");
+                $sql = "SELECT p.*, 
+                               t.nome AS tipo_name,
+                               '' AS pp_number
+                        FROM products p 
+                        LEFT JOIN tipos t ON p.tipo_id = t.id
+                        WHERE p.batch_id = ? OR p.lote_id = ?
+                        ORDER BY p.serial_number ASC";
+            }
+            
+            error_log("Product::getByBatchId - SQL: " . $sql);
+            error_log("Product::getByBatchId - Batch ID: " . $batchId);
+            
+            $stmt = $this->conn->prepare($sql);
+            if ($hasBatchColumn) {
+                $stmt->execute([$batchId]);
+            } else {
+                $stmt->execute([$batchId, $batchId]);
+            }
+            
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("Product::getByBatchId - Produtos encontrados: " . count($result));
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("Product::getByBatchId - Erro SQL: " . $e->getMessage());
+            return [];
+        }
     }
 
     public function getByOrderId($orderId)
