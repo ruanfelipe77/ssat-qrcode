@@ -129,6 +129,27 @@ $statuses = $statusModel->getActive();
                     <input type="hidden" name="action" value="create_batch">
 
                     <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="batch_number" class="form-label">Nome do Lote (sugerido)</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="batch_number" name="batch_number" 
+                                       placeholder="Carregando sugestão..." required>
+                                <button type="button" class="btn btn-outline-secondary" id="refresh-batch-name" 
+                                        title="Gerar nova sugestão">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Sugestão automática baseada em mês/ano/sequência. Você pode editar conforme necessário.
+                            </div>
+                            <div class="invalid-feedback">
+                                Por favor, informe o nome do lote.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
                         <div class="col-md-8">
                             <label for="tipo_id" class="form-label">Tipo de Produto</label>
                             <select class="form-select" name="tipo_id" id="tipo_id" required>

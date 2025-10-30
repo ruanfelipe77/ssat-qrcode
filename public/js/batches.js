@@ -92,6 +92,11 @@ $(document).ready(function () {
 
   $("#serial_start, #quantity").on("input", updateSerialPreview);
 
+  // Botão de refresh para gerar nova sugestão de nome do lote
+  $("#refresh-batch-name").on("click", function () {
+    loadBatchNameSuggestion();
+  });
+
   // Novo Lote
   $("#add-batch").on("click", function () {
     // Atualizar preview do número do lote
@@ -103,6 +108,8 @@ $(document).ready(function () {
       $("#serial_start").val("").prop("readonly", false);
       $("#quantity").val("");
       $("#serial_preview").val("");
+      // Carregar sugestão de nome do lote
+      loadBatchNameSuggestion();
       // buscar número inicial quando escolher o tipo (ou já se tiver selecionado)
       fetchNextSerialStart();
       modal.show();
@@ -146,6 +153,40 @@ $(document).ready(function () {
     });
   }
 
+  // Função para carregar sugestão de nome do lote no campo editável
+  function loadBatchNameSuggestion() {
+    const currentMonthYear =
+      new Date().toISOString().substr(5, 2) + new Date().getFullYear();
+
+    $("#batch_number").val("Carregando...").prop("disabled", true);
+
+    $.ajax({
+      type: "GET",
+      url: "src/controllers/BatchController.php",
+      data: {
+        action: "get_next_batch_number",
+      },
+      success: function (response) {
+        try {
+          const res = JSON.parse(response);
+          if (res.success) {
+            $("#batch_number").val(res.next_number);
+          } else {
+            $("#batch_number").val(currentMonthYear + "/0001");
+          }
+        } catch (e) {
+          $("#batch_number").val(currentMonthYear + "/0001");
+        }
+      },
+      error: function () {
+        $("#batch_number").val(currentMonthYear + "/0001");
+      },
+      complete: function () {
+        $("#batch_number").prop("disabled", false);
+      }
+    });
+  }
+
   // Submissão do formulário de lote
   $("#batchForm").on("submit", function (event) {
     event.preventDefault();
@@ -158,13 +199,15 @@ $(document).ready(function () {
 
     const formData = $(this).serialize();
     const quantity = parseInt($("#quantity").val());
+    const batchName = $("#batch_number").val();
 
     Swal.fire({
       title: "Confirmação",
       html: `
                 Você está prestes a criar um lote com:<br>
-                <b>${quantity}</b> produtos<br>
-                Números de série: <b>${$("#serial_preview").val()}</b><br><br>
+                <b>Nome:</b> ${batchName}<br>
+                <b>Produtos:</b> ${quantity} itens<br>
+                <b>Números de série:</b> ${$("#serial_preview").val()}<br><br>
                 Deseja continuar?
             `,
       icon: "question",

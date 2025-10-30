@@ -80,7 +80,10 @@ class ProductionBatch {
 
             $stmt = $this->conn->prepare($query);
 
-            $batch_number = $this->generateBatchNumber();
+            // Usar o nome fornecido pelo usuário ou gerar automaticamente
+            $batch_number = !empty($data['batch_number']) ? 
+                            trim($data['batch_number']) : 
+                            $this->generateBatchNumber();
 
             // Sanitize
             $production_date = htmlspecialchars(strip_tags($data['production_date']));
