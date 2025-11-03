@@ -30,8 +30,8 @@ $(document).ready(function () {
     $("#id").val("");
   }
 
-  // Manipulador para visualizar produtos
-  $(".view-products").on("click", function () {
+  // Manipulador para visualizar produtos (usando event delegation)
+  $(document).on("click", ".view-products", function () {
     const clientId = $(this).data("id");
     const clientName = $(this).data("name");
     const clientLocation = $(this).data("location");
@@ -128,8 +128,8 @@ $(document).ready(function () {
     modal.show();
   });
 
-  // Manipulador para editar cliente
-  $(".edit-client").on("click", function () {
+  // Manipulador para editar cliente (usando event delegation)
+  $(document).on("click", ".edit-client", function () {
     const id = $(this).data("id");
 
     $.ajax({
@@ -207,8 +207,8 @@ $(document).ready(function () {
     });
   });
 
-  // Manipulador para deletar cliente
-  $(".delete-client").on("click", function () {
+  // Manipulador para deletar cliente (usando event delegation)
+  $(document).on("click", ".delete-client", function () {
     const id = $(this).data("id");
 
     Swal.fire({

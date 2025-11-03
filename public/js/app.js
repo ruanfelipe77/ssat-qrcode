@@ -22,8 +22,8 @@ $(document).ready(function () {
     modal.show();
   });
 
-  // Manipulador para editar produto
-  $(".edit-mcp").on("click", function () {
+  // Manipulador para editar produto (usando event delegation)
+  $(document).on("click", ".edit-mcp", function () {
     const id = $(this).data("id");
 
     $.ajax({
@@ -103,8 +103,8 @@ $(document).ready(function () {
     });
   });
 
-  // Manipulador para deletar produto
-  $(".delete-mcp").on("click", function () {
+  // Manipulador para deletar produto (usando event delegation)
+  $(document).on("click", ".delete-mcp", function () {
     const id = $(this).data("id");
 
     Swal.fire({
@@ -153,8 +153,8 @@ $(document).ready(function () {
     });
   });
 
-  // Manipulador para imprimir etiqueta (individual) na página principal
-  $(".print-qrcode").on("click", function () {
+  // Manipulador para imprimir etiqueta (individual) na página principal (usando event delegation)
+  $(document).on("click", ".print-qrcode", function () {
     const id = $(this).data("id");
     if (!id) return;
     window.open(
