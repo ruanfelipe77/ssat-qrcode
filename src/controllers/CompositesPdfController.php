@@ -40,7 +40,7 @@ try {
                 WHERE a.composite_product_id = p.id 
                 AND a.status = 'finalized'
             )
-            ORDER BY p.serial_number ASC";
+            ORDER BY t.nome ASC, CAST(p.serial_number AS UNSIGNED) ASC";
     
     $stmt = $db->prepare($sql);
     $stmt->execute(['order_id' => $orderId]);
@@ -92,6 +92,9 @@ try {
     die('Erro ao buscar dados: ' . $e->getMessage());
 }
 
+$firstPageComponentLimit = 16;
+$nextPageComponentLimit = 24;
+
 // Gerar HTML para impressão
 ?>
 <!DOCTYPE html>
@@ -127,7 +130,6 @@ try {
         }
         
         .product-page {
-            min-height: 100vh;
             padding: 40px;
         }
         
@@ -156,76 +158,104 @@ try {
     </div>
 
     <?php foreach ($productsData as $index => $data): ?>
-        <div class="product-page <?= $index < count($productsData) - 1 ? 'page-break' : '' ?>">
-            <div class="container">
-                <div class="text-center mb-4">
-                    <h2>Componentes do Produto</h2>
-                    <p class="mb-1"><strong>Número de Série:</strong> #<?= htmlspecialchars($data['assembly']['composite_serial']) ?></p>
-                    <p class="text-muted mb-0"><strong>Pedido de Produção:</strong> <?= htmlspecialchars($order['order_number']) ?></p>
-                </div>
+        <?php
+            $components = $data['components'] ?? [];
+            $firstPageComponents = array_slice($components, 0, $firstPageComponentLimit);
+            $remainingComponents = array_slice($components, $firstPageComponentLimit);
+            $remainingComponentPages = !empty($remainingComponents)
+                ? array_chunk($remainingComponents, $nextPageComponentLimit)
+                : [];
+            $totalPagesForProduct = 1 + count($remainingComponentPages);
+        ?>
 
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Informações do Produto</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <span class="info-label">Produto:</span>
-                                <span class="ms-2"><?= htmlspecialchars($data['assembly']['composite_tipo_name'] ?? 'N/A') ?></span>
+        <?php for ($productPage = 0; $productPage < $totalPagesForProduct; $productPage++): ?>
+            <?php
+                $isLastProduct = $index === count($productsData) - 1;
+                $isLastPageForProduct = $productPage === $totalPagesForProduct - 1;
+                $shouldBreakPage = !($isLastProduct && $isLastPageForProduct);
+                $pageComponents = $productPage === 0
+                    ? $firstPageComponents
+                    : $remainingComponentPages[$productPage - 1];
+            ?>
+            <div class="product-page <?= $shouldBreakPage ? 'page-break' : '' ?>">
+                <div class="container">
+                    <?php if ($productPage === 0): ?>
+                        <?php if ($index === 0): ?>
+                            <div class="text-center mb-4">
+                                <img src="../../public/images/logo_ssat.png" alt="Logo SSAT" style="max-width: 200px; height: auto; margin-bottom: 20px;">
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <span class="info-label">Cliente:</span>
-                                <span class="ms-2"><?= htmlspecialchars($data['assembly']['client_name'] ?? 'N/A') ?></span>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <span class="info-label">Nota Fiscal/Empenho:</span>
-                                <span class="ms-2"><?= htmlspecialchars($data['assembly']['nfe_or_pp'] ?? 'N/A') ?></span>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <span class="info-label">Montado em:</span>
-                                <span class="ms-2"><?= $data['assembly']['created_at'] ? date('d/m/Y', strtotime($data['assembly']['created_at'])) : 'N/A' ?></span>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <span class="info-label">Montado por:</span>
-                                <span class="ms-2"><?= htmlspecialchars($data['assembly']['created_by_name'] ?? 'N/A') ?></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        <?php endif; ?>
 
-                <div class="card">
-                    <div class="card-header bg-secondary text-white">
-                        <div class="row">
-                            <div class="col-8">
-                                <h5 class="mb-0">Componente</h5>
-                            </div>
-                            <div class="col-4 text-end">
-                                <h5 class="mb-0">Nº série</h5>
-                            </div>
+                        <div class="text-center mb-4">
+                            <h2>Componentes do Produto</h2>
+                            <p class="mb-1"><strong>Número de Série:</strong> #<?= htmlspecialchars($data['assembly']['composite_serial']) ?></p>
+                            <p class="text-muted mb-0"><strong>Pedido de Produção:</strong> <?= htmlspecialchars($order['order_number']) ?></p>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <?php if (!empty($data['components'])): ?>
-                            <?php foreach ($data['components'] as $component): ?>
-                                <div class="component-item">
-                                    <div class="row align-items-center">
-                                        <div class="col-8">
-                                            <h6 class="mb-0"><?= htmlspecialchars($component['component_tipo_name']) ?></h6>
-                                        </div>
-                                        <div class="col-4 text-end">
-                                            <span class="badge bg-dark"><?= htmlspecialchars($component['component_serial']) ?></span>
-                                        </div>
+
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Informações do Produto</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <span class="info-label">Produto:</span>
+                                        <span class="ms-2"><?= htmlspecialchars($data['assembly']['composite_tipo_name'] ?? 'N/A') ?></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <span class="info-label">Cliente:</span>
+                                        <span class="ms-2"><?= htmlspecialchars($data['assembly']['client_name'] ?? 'N/A') ?></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <span class="info-label">Nota Fiscal/Empenho:</span>
+                                        <span class="ms-2"><?= htmlspecialchars($data['assembly']['nfe_or_pp'] ?? 'N/A') ?></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <span class="info-label">Montado em:</span>
+                                        <span class="ms-2"><?= $data['assembly']['created_at'] ? date('d/m/Y', strtotime($data['assembly']['created_at'])) : 'N/A' ?></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <span class="info-label">Montado por:</span>
+                                        <span class="ms-2"><?= htmlspecialchars($data['assembly']['created_by_name'] ?? 'N/A') ?></span>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p class="text-muted mb-0">Nenhum componente encontrado.</p>
-                        <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <div class="row">
+                                <div class="col-8">
+                                    <h5 class="mb-0">Componente</h5>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <h5 class="mb-0">Nº série</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <?php if (!empty($pageComponents)): ?>
+                                <?php foreach ($pageComponents as $component): ?>
+                                    <div class="component-item">
+                                        <div class="row align-items-center">
+                                            <div class="col-8">
+                                                <h6 class="mb-0"><?= htmlspecialchars($component['component_tipo_name']) ?></h6>
+                                            </div>
+                                            <div class="col-4 text-end">
+                                                <span class="badge bg-dark"><?= htmlspecialchars($component['component_serial']) ?></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="text-muted mb-0">Nenhum componente encontrado.</p>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        <?php endfor; ?>
     <?php endforeach; ?>
 
     <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
