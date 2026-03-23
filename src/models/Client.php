@@ -87,9 +87,12 @@ class Client {
                      ORDER BY c.name ASC";
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("Client::getAll() - Query executada, registros retornados: " . count($result));
+            return $result;
         } catch (PDOException $e) {
             error_log("Error in Client::getAll(): " . $e->getMessage());
+            error_log("SQL that failed: " . $query);
             return [];
         }
     }

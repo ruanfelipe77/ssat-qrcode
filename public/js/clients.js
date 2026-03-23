@@ -11,11 +11,17 @@ $(document).ready(function () {
       url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json",
     },
     dom: "frtip",
+    initComplete: function () {
+      console.log("DataTable inicializado");
+      console.log("Total de linhas:", this.api().rows().count());
+      $("#clients-table").addClass("initialized");
+      $(".table-loading-static").remove();
+    },
   });
 
   // Inicializar tooltips
   var tooltipTriggerList = [].slice.call(
-    document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    document.querySelectorAll('[data-bs-toggle="tooltip"]'),
   );
   tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl);
@@ -52,7 +58,7 @@ $(document).ready(function () {
         if (products.length > 0) {
           products.forEach((product) => {
             const saleDate = new Date(product.sale_date).toLocaleDateString(
-              "pt-BR"
+              "pt-BR",
             );
             html += `
                             <div class="product-card p-3 mb-3 border rounded">
@@ -104,7 +110,7 @@ $(document).ready(function () {
 
         // Inicializar o modal
         const modal = new bootstrap.Modal(
-          document.getElementById("productsModal")
+          document.getElementById("productsModal"),
         );
         modal.show();
       },
@@ -149,7 +155,7 @@ $(document).ready(function () {
         $("#state").val(client.state);
 
         const modal = new bootstrap.Modal(
-          document.getElementById("clientModal")
+          document.getElementById("clientModal"),
         );
         modal.show();
       },
@@ -183,7 +189,7 @@ $(document).ready(function () {
       data: formData,
       success: function (response) {
         const modal = bootstrap.Modal.getInstance(
-          document.getElementById("clientModal")
+          document.getElementById("clientModal"),
         );
         modal.hide();
 
@@ -263,7 +269,7 @@ $(document).ready(function () {
   // Fechar modal ao clicar no botão de fechar
   $('.btn-close, .btn[data-bs-dismiss="modal"]').on("click", function () {
     const modal = bootstrap.Modal.getInstance(
-      document.getElementById("clientModal")
+      document.getElementById("clientModal"),
     );
     if (modal) {
       modal.hide();

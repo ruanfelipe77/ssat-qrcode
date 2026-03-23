@@ -185,7 +185,11 @@ $(document).ready(function() {
             url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json"
         },
         dom: "frtip",
-        destroy: true // Permite reinicialização
+        destroy: true, // Permite reinicialização
+        initComplete: function() {
+            $('#tipos-table').addClass('initialized');
+            $('.table-loading-static').remove();
+        }
     });
 });
 </script>

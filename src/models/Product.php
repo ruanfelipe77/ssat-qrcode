@@ -32,7 +32,7 @@ class Product
             
             
             if ($hasBatchColumn && $hasOrderColumn && $hasStatusColumn) {
-                // Versão completa com lotes, pedidos e status
+                // Versão completa com lotes, pedidos e status - OTIMIZADA
                 $sql = "SELECT p.id, 
                                p.serial_number, 
                                p.sale_date, 
@@ -42,13 +42,10 @@ class Product
                                p.status_id,
                                COALESCE(p.status, 'in_stock') as status,
                                " . ($hasParentCompositeColumn ? "p.parent_composite_id, " : "NULL as parent_composite_id, ") . "
-                               COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
-                               CASE 
-                                   WHEN EXISTS(SELECT 1 FROM assemblies a WHERE a.composite_product_id = p.id AND a.status = 'finalized') THEN 1
-                                   ELSE 0
-                               END as is_composite,
-                               COALESCE(pb.batch_number, 'Sem Lote') as batch_number,
-                               COALESCE(so.order_number, '') AS pp_number,
+                               t.nome AS tipo_name,
+                               CASE WHEN a.composite_product_id IS NOT NULL THEN 1 ELSE 0 END as is_composite,
+                               pb.batch_number,
+                               so.order_number AS pp_number,
                                CASE 
                                    WHEN p.status = 'in_composite' OR ps.name = 'em_composicao' THEN 'in_composite'
                                    ELSE COALESCE(ps.name, 'em_estoque')
@@ -59,21 +56,26 @@ class Product
                                END as status_color,
                                CASE 
                                    WHEN p.destination = 'estoque' THEN 'Em Estoque'
-                                   WHEN c.name IS NOT NULL THEN c.name
+                                   WHEN c.id IS NOT NULL THEN c.name
                                    WHEN p.destination REGEXP '^[0-9]+$' THEN CONCAT('Cliente ID: ', p.destination)
                                    ELSE p.destination
                                END as client_name,
-                               COALESCE(c.city, '') as client_city,
-                               COALESCE(c.state, '') as client_state
+                               c.city as client_city,
+                               c.state as client_state
                         FROM products p 
                         LEFT JOIN tipos t ON p.tipo_id = t.id
                         LEFT JOIN production_batches pb ON p.production_batch_id = pb.id
                         LEFT JOIN sales_orders so ON p.production_order_id = so.id
                         LEFT JOIN product_status ps ON p.status_id = ps.id
-                        LEFT JOIN clients c ON (p.destination REGEXP '^[0-9]+$' AND p.destination = c.id)
+                        LEFT JOIN clients c ON (p.destination REGEXP '^[0-9]+$' AND CAST(p.destination AS UNSIGNED) = c.id)
+                        LEFT JOIN (
+                            SELECT DISTINCT composite_product_id 
+                            FROM assemblies 
+                            WHERE status = 'finalized'
+                        ) a ON a.composite_product_id = p.id
                         ORDER BY p.id DESC";
             } else {
-                // Versão básica que funciona com estrutura original
+                // Versão básica que funciona com estrutura original - OTIMIZADA
                 $sql = "SELECT p.id, 
                                p.serial_number, 
                                p.sale_date, 
@@ -83,11 +85,8 @@ class Product
                                NULL as status_id,
                                COALESCE(p.status, 'in_stock') as status,
                                " . ($hasParentCompositeColumn ? "p.parent_composite_id, " : "NULL as parent_composite_id, ") . "
-                               COALESCE(t.nome, 'Sem Tipo') AS tipo_name,
-                               CASE 
-                                   WHEN EXISTS(SELECT 1 FROM assemblies a WHERE a.composite_product_id = p.id AND a.status = 'finalized') THEN 1
-                                   ELSE 0
-                               END as is_composite,
+                               t.nome AS tipo_name,
+                               CASE WHEN a.composite_product_id IS NOT NULL THEN 1 ELSE 0 END as is_composite,
                                'Sem Lote' as batch_number,
                                '' AS pp_number,
                                CASE 
@@ -104,15 +103,20 @@ class Product
                                END as status_icon,
                                CASE 
                                    WHEN p.destination = 'estoque' THEN 'Em Estoque'
-                                   WHEN c.name IS NOT NULL THEN c.name
+                                   WHEN c.id IS NOT NULL THEN c.name
                                    WHEN p.destination REGEXP '^[0-9]+$' THEN CONCAT('Cliente ID: ', p.destination)
                                    ELSE p.destination
                                END as client_name,
-                               COALESCE(c.city, '') as client_city,
-                               COALESCE(c.state, '') as client_state
+                               c.city as client_city,
+                               c.state as client_state
                         FROM products p 
                         LEFT JOIN tipos t ON p.tipo_id = t.id
-                        LEFT JOIN clients c ON (p.destination REGEXP '^[0-9]+$' AND p.destination = c.id)
+                        LEFT JOIN clients c ON (p.destination REGEXP '^[0-9]+$' AND CAST(p.destination AS UNSIGNED) = c.id)
+                        LEFT JOIN (
+                            SELECT DISTINCT composite_product_id 
+                            FROM assemblies 
+                            WHERE status = 'finalized'
+                        ) a ON a.composite_product_id = p.id
                         ORDER BY p.id DESC";
             }
             
@@ -149,7 +153,7 @@ class Product
                         LEFT JOIN tipos t ON p.tipo_id = t.id
                         LEFT JOIN production_batches pb ON p.production_batch_id = pb.id
                         WHERE p.production_order_id IS NULL
-                        ORDER BY p.serial_number ASC";
+                        ORDER BY CAST(p.serial_number AS UNSIGNED) ASC";
             } else {
                 $sql = "SELECT p.id, 
                                p.serial_number, 
@@ -159,7 +163,7 @@ class Product
                         FROM products p 
                         LEFT JOIN tipos t ON p.tipo_id = t.id
                         WHERE p.destination = 'estoque'
-                        ORDER BY p.serial_number ASC";
+                        ORDER BY CAST(p.serial_number AS UNSIGNED) ASC";
             }
             
             $stmt = $this->conn->prepare($sql);
@@ -269,7 +273,7 @@ class Product
                         FROM products p 
                         LEFT JOIN tipos t ON p.tipo_id = t.id
                         WHERE p.production_batch_id = ?
-                        ORDER BY p.serial_number ASC";
+                        ORDER BY CAST(p.serial_number AS UNSIGNED) ASC";
             } else {
                 // Fallback: buscar por algum campo relacionado ao lote
                 error_log("Product::getByBatchId - Tentando buscar por batch_id alternativo");
@@ -279,7 +283,7 @@ class Product
                         FROM products p 
                         LEFT JOIN tipos t ON p.tipo_id = t.id
                         WHERE p.batch_id = ? OR p.lote_id = ?
-                        ORDER BY p.serial_number ASC";
+                        ORDER BY CAST(p.serial_number AS UNSIGNED) ASC";
             }
             
             error_log("Product::getByBatchId - SQL: " . $sql);
@@ -311,7 +315,7 @@ class Product
                 JOIN tipos t ON p.tipo_id = t.id
                 LEFT JOIN production_batches pb ON p.production_batch_id = pb.id
                 WHERE p.production_order_id = ?
-                ORDER BY p.serial_number ASC";
+                ORDER BY CAST(p.serial_number AS UNSIGNED) ASC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$orderId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -326,7 +330,7 @@ class Product
                     FROM products p 
                     LEFT JOIN tipos t ON p.tipo_id = t.id
                     WHERE p.destination = ?
-                    ORDER BY p.serial_number ASC";
+                    ORDER BY CAST(p.serial_number AS UNSIGNED) ASC";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$clientId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);

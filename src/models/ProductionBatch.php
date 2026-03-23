@@ -205,14 +205,22 @@ class ProductionBatch {
 
     public function getAll() {
         try {
-            $query = "SELECT b.*, 
-                            COUNT(p.id) as total_products,
-                            COUNT(CASE WHEN p.production_order_id IS NULL THEN 1 END) as available_products,
-                            COALESCE(MIN(t.nome), 'Sem Tipo') AS tipo_name
+            // Query otimizada com subquery para melhor performance
+            $query = "SELECT b.id, b.batch_number, b.production_date, b.notes, b.created_at, b.updated_at,
+                            COALESCE(stats.total_products, 0) as total_products,
+                            COALESCE(stats.available_products, 0) as available_products,
+                            stats.tipo_name
                      FROM " . $this->table_name . " b
-                     LEFT JOIN products p ON p.production_batch_id = b.id
-                     LEFT JOIN tipos t ON p.tipo_id = t.id
-                     GROUP BY b.id
+                     LEFT JOIN (
+                         SELECT p.production_batch_id,
+                                COUNT(*) as total_products,
+                                SUM(CASE WHEN p.production_order_id IS NULL THEN 1 ELSE 0 END) as available_products,
+                                t.nome as tipo_name
+                         FROM products p
+                         INNER JOIN tipos t ON p.tipo_id = t.id
+                         WHERE p.production_batch_id IS NOT NULL
+                         GROUP BY p.production_batch_id, t.nome
+                     ) stats ON stats.production_batch_id = b.id
                      ORDER BY b.id DESC";
 
             $stmt = $this->conn->prepare($query);
@@ -229,7 +237,7 @@ class ProductionBatch {
                  FROM products p
                  LEFT JOIN tipos t ON p.tipo_id = t.id
                  WHERE p.production_batch_id = ?
-                 ORDER BY p.serial_number ASC";
+                 ORDER BY CAST(p.serial_number AS UNSIGNED) ASC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$id]);
@@ -242,7 +250,7 @@ class ProductionBatch {
                  LEFT JOIN tipos t ON p.tipo_id = t.id
                  WHERE p.production_batch_id = ? 
                  AND p.production_order_id IS NULL
-                 ORDER BY p.serial_number ASC";
+                 ORDER BY CAST(p.serial_number AS UNSIGNED) ASC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$id]);

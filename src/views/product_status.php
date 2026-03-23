@@ -129,6 +129,10 @@ $(document).ready(function () {
         },
         dom: "frtip",
         order: [[0, "asc"]],
+        initComplete: function() {
+            $('#status-table').addClass('initialized');
+            $('.table-loading-static').remove();
+        }
     });
 });
 </script>

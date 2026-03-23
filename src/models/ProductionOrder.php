@@ -174,15 +174,22 @@ class ProductionOrder {
     public function getAll() {
         try {
             $hasNfe = $this->checkIfColumnExists($this->table_name, 'nfe');
-            $query = "SELECT po.*, 
-                            COALESCE(c.name, 'Cliente Não Encontrado') as client_name, 
-                            COALESCE(c.city, '') as client_city, 
-                            COALESCE(c.state, '') as client_state,
-                            COUNT(p.id) as total_products
+            // Query otimizada com subquery para melhor performance
+            $query = "SELECT po.id, po.order_number, po.client_id, po.order_date, 
+                            po.warranty, po.notes, po.status, po.created_at, po.updated_at" . 
+                            ($hasNfe ? ", po.nfe" : "") . ",
+                            c.name as client_name, 
+                            c.city as client_city, 
+                            c.state as client_state,
+                            COALESCE(prod.total_products, 0) as total_products
                      FROM " . $this->table_name . " po
                      LEFT JOIN clients c ON po.client_id = c.id
-                     LEFT JOIN products p ON p.production_order_id = po.id
-                     GROUP BY po.id
+                     LEFT JOIN (
+                         SELECT production_order_id, COUNT(*) as total_products
+                         FROM products
+                         WHERE production_order_id IS NOT NULL
+                         GROUP BY production_order_id
+                     ) prod ON prod.production_order_id = po.id
                      ORDER BY po.id DESC";
 
             $stmt = $this->conn->prepare($query);
@@ -200,7 +207,7 @@ class ProductionOrder {
                  LEFT JOIN tipos t ON p.tipo_id = t.id
                  LEFT JOIN production_batches pb ON p.production_batch_id = pb.id
                  WHERE p.production_order_id = ?
-                 ORDER BY p.serial_number ASC";
+                 ORDER BY CAST(p.serial_number AS UNSIGNED) ASC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$id]);

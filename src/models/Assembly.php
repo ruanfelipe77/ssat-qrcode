@@ -24,21 +24,24 @@ class Assembly
     public function getAll()
     {
         try {
-            $sql = "SELECT a.id,
-                           a.status,
-                           a.created_at,
-                           a.updated_at,
-                           a.composite_serial,
-                           MAX(ct.version) as template_version,
-                           MAX(t.nome) as composite_tipo_name,
-                           MAX(u.name) as created_by_name,
-                           COUNT(DISTINCT ac.id) as components_count
+            // Query otimizada com INNER JOIN e subquery para melhor performance
+            $sql = "SELECT a.id, a.status, a.created_at, a.updated_at, a.composite_serial,
+                           a.composite_product_id,
+                           ct.version as template_version,
+                           t.nome as composite_tipo_name,
+                           u.name as created_by_name,
+                           COALESCE(comp.components_count, 0) as components_count,
+                           p.serial_number as composite_serial_number
                     FROM assemblies a
-                    LEFT JOIN composite_templates ct ON a.template_id = ct.id
-                    LEFT JOIN tipos t ON ct.tipo_id = t.id
+                    INNER JOIN composite_templates ct ON a.template_id = ct.id
+                    INNER JOIN tipos t ON ct.tipo_id = t.id
                     LEFT JOIN users u ON a.created_by = u.id
-                    LEFT JOIN assembly_components ac ON a.id = ac.assembly_id
-                    GROUP BY a.id, a.status, a.created_at, a.updated_at, a.composite_serial
+                    LEFT JOIN products p ON a.composite_product_id = p.id
+                    LEFT JOIN (
+                        SELECT assembly_id, COUNT(*) as components_count
+                        FROM assembly_components
+                        GROUP BY assembly_id
+                    ) comp ON comp.assembly_id = a.id
                     ORDER BY a.created_at DESC";
             
             $stmt = $this->conn->prepare($sql);

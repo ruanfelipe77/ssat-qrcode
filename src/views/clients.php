@@ -9,6 +9,11 @@ $db = $database->getConnection();
 $clientModel = new Client($db);
 $clients = $clientModel->getAll();
 
+error_log("clients.php - Total de clientes carregados: " . count($clients));
+if (count($clients) > 0) {
+    error_log("clients.php - Primeiro cliente: " . json_encode($clients[0]));
+}
+
 $productModel = new Product($db);
 ?>
 
@@ -40,14 +45,23 @@ $productModel = new Product($db);
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($clients as $client) : 
-                        $products = $productModel->getByClientId($client['id']);
-                        $totalProducts = count($products);
+                    <?php 
+                    error_log("DEBUG: Total de clientes no loop: " . count($clients));
+                    foreach ($clients as $client) : 
+                        error_log("DEBUG: Processando cliente ID: " . $client['id']);
+                        try {
+                            $products = $productModel->getByClientId($client['id']);
+                            $totalProducts = count($products);
+                        } catch (Exception $e) {
+                            error_log("Erro ao buscar produtos do cliente " . $client['id'] . ": " . $e->getMessage());
+                            $products = [];
+                            $totalProducts = 0;
+                        }
                     ?>
-                        <tr>
+                        <tr data-client-id="<?= $client['id'] ?>">
                             <td><?= $client['id'] ?></td>
-                            <td><?= $client['name'] ?></td>
-                            <td><?= $client['city'] ?></td>
+                            <td><?= htmlspecialchars($client['name']) ?></td>
+                            <td><?= htmlspecialchars($client['city']) ?></td>
                             <td><?= $client['state'] ?></td>
                             <td class="text-center">
                                 <?php if ($totalProducts > 0) : ?>
