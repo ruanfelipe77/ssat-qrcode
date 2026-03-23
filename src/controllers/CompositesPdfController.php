@@ -159,8 +159,9 @@ try {
         <div class="product-page <?= $index < count($productsData) - 1 ? 'page-break' : '' ?>">
             <div class="container">
                 <div class="text-center mb-4">
-                    <h2>Componentes do Produto #<?= htmlspecialchars($data['assembly']['composite_serial']) ?></h2>
-                    <p class="text-muted">Pedido de Produção: <?= htmlspecialchars($order['order_number']) ?></p>
+                    <h2>Componentes do Produto</h2>
+                    <p class="mb-1"><strong>Número de Série:</strong> #<?= htmlspecialchars($data['assembly']['composite_serial']) ?></p>
+                    <p class="text-muted mb-0"><strong>Pedido de Produção:</strong> <?= htmlspecialchars($order['order_number']) ?></p>
                 </div>
 
                 <div class="card mb-4">
@@ -172,10 +173,6 @@ try {
                             <div class="col-md-6 mb-3">
                                 <span class="info-label">Produto:</span>
                                 <span class="ms-2"><?= htmlspecialchars($data['assembly']['composite_tipo_name'] ?? 'N/A') ?></span>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <span class="info-label">Status:</span>
-                                <span class="ms-2"><?= htmlspecialchars($data['assembly']['composite_destination'] ?? 'N/A') ?></span>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <span class="info-label">Cliente:</span>
@@ -199,15 +196,26 @@ try {
 
                 <div class="card">
                     <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0">Componentes</h5>
+                        <div class="row">
+                            <div class="col-8">
+                                <h5 class="mb-0">Componente</h5>
+                            </div>
+                            <div class="col-4 text-end">
+                                <h5 class="mb-0">Nº série</h5>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <?php if (!empty($data['components'])): ?>
                             <?php foreach ($data['components'] as $component): ?>
                                 <div class="component-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0"><?= htmlspecialchars($component['component_tipo_name']) ?></h6>
-                                        <span class="badge bg-dark"><?= htmlspecialchars($component['component_serial']) ?></span>
+                                    <div class="row align-items-center">
+                                        <div class="col-8">
+                                            <h6 class="mb-0"><?= htmlspecialchars($component['component_tipo_name']) ?></h6>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <span class="badge bg-dark"><?= htmlspecialchars($component['component_serial']) ?></span>
+                                        </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
