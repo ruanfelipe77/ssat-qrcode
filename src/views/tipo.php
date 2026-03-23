@@ -30,6 +30,7 @@ $tipos = $TipoModel->getAll();
                     <tr>
                         <th>ID</th>
                         <th>Nome</th>
+                        <th>Tipo</th>
                         <th style="width: 120px; text-align: center;">Ações</th>
                     </tr>
                 </thead>
@@ -38,6 +39,17 @@ $tipos = $TipoModel->getAll();
                         <tr>
                             <td><?= $tipo['id'] ?></td>
                             <td><?= $tipo['nome'] ?></td>
+                            <td>
+                                <?php if (isset($tipo['is_composite']) && $tipo['is_composite'] == 1): ?>
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-cubes me-1"></i>Composto
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-cube me-1"></i>Individual
+                                    </span>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <div class="d-flex justify-content-center align-items-center gap-3">
                                     <button class="btn btn-link text-dark p-0 edit-tipo" data-id="<?= $tipo['id'] ?>" title="Editar">
@@ -84,7 +96,8 @@ $(document).on('click', '.edit-tipo', function () {
         $('#action_tipo').val('edit');
         $('#tipoForm [name="tipo_id"]').val(tipo.id);
         $('#nome').val(tipo.nome);
-        console.log('Valores definidos - ID:', $('#tipoForm [name="tipo_id"]').val(), 'Nome:', $('#nome').val());
+        $('#is_composite').prop('checked', tipo.is_composite == 1);
+        console.log('Valores definidos - ID:', $('#tipoForm [name="tipo_id"]').val(), 'Nome:', $('#nome').val(), 'Composto:', tipo.is_composite);
         $('.modal-title-text').text('Editar Tipo de Produto');
         $('.btn-acao').html('<i class="fas fa-save me-2"></i>Atualizar');
         const modal = new bootstrap.Modal(document.getElementById('tipoModal'));

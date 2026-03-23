@@ -22,6 +22,16 @@
                         </div>
                     </div>
 
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_composite" name="is_composite" value="1">
+                            <label class="form-check-label" for="is_composite">
+                                <i class="fas fa-cubes me-1"></i>Produto Composto
+                            </label>
+                        </div>
+                        <small class="text-muted">Marque se este tipo de produto é formado por outros componentes (ex: Controlador, Módulos IO, etc)</small>
+                    </div>
+
                     <div class="modal-footer px-0 pb-0">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="fas fa-times me-2"></i>Cancelar

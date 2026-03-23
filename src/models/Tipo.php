@@ -17,18 +17,20 @@ class Tipo
 
     public function create($data)
     {
-        $stmt = $this->conn->prepare('INSERT INTO tipos (nome) VALUES (:nome)');
+        $stmt = $this->conn->prepare('INSERT INTO tipos (nome, is_composite) VALUES (:nome, :is_composite)');
         return $stmt->execute([
-            'nome' => $data['nome']
+            'nome' => $data['nome'],
+            'is_composite' => isset($data['is_composite']) ? 1 : 0
         ]);
     }
 
     public function update($data)
     {
-        $stmt = $this->conn->prepare('UPDATE tipos SET nome = :nome WHERE id = :id');
+        $stmt = $this->conn->prepare('UPDATE tipos SET nome = :nome, is_composite = :is_composite WHERE id = :id');
         return $stmt->execute([
             'id' => $data['id'],
-            'nome' => $data['nome']
+            'nome' => $data['nome'],
+            'is_composite' => isset($data['is_composite']) ? 1 : 0
         ]);
     }
 
