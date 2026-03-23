@@ -75,6 +75,10 @@ $(document).ready(function () {
     },
     dom: "frtip",
     order: [[0, "desc"]], // Ordenar por Lote (mais recente primeiro)
+    initComplete: function () {
+      $("#batches-table").addClass("initialized");
+      $(".table-loading-static").remove();
+    },
   });
 
   // Preview do range de números de série
@@ -183,7 +187,7 @@ $(document).ready(function () {
       },
       complete: function () {
         $("#batch_number").prop("disabled", false);
-      }
+      },
     });
   }
 
@@ -225,7 +229,7 @@ $(document).ready(function () {
               const res = JSON.parse(response);
               if (res.success) {
                 const modal = bootstrap.Modal.getInstance(
-                  document.getElementById("batchModal")
+                  document.getElementById("batchModal"),
                 );
                 modal.hide();
 
@@ -288,7 +292,7 @@ $(document).ready(function () {
           if (products.length > 0) {
             $(".total-products").text(products.length);
             $(".available-products").text(
-              products.filter((p) => !p.production_order_id).length
+              products.filter((p) => !p.production_order_id).length,
             );
 
             products.forEach((product) => {
@@ -404,7 +408,7 @@ $(document).ready(function () {
       setTimeout(() => {
         window.open(
           `src/controllers/QrController.php?id=${encodeURIComponent(id)}&s=300`,
-          "_blank"
+          "_blank",
         );
       }, idx * 150);
     });
@@ -430,7 +434,7 @@ $(document).ready(function () {
       if (result.isConfirmed) {
         // Abrir tela de impressão com todos os produtos do lote
         const printUrl = `src/controllers/LabelController.php?batch_id=${encodeURIComponent(
-          id
+          id,
         )}&dpi=300`;
         window.open(printUrl, "_blank");
 
@@ -451,7 +455,7 @@ $(document).ready(function () {
     if (!id) return;
     window.open(
       `src/controllers/QrController.php?id=${encodeURIComponent(id)}&s=300`,
-      "_blank"
+      "_blank",
     );
   });
 

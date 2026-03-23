@@ -87,8 +87,8 @@ $(document).ready(function () {
               p.batch_number && String(p.batch_number).trim() !== ""
                 ? p.batch_number
                 : p.production_batch_id
-                ? `Lote ${p.production_batch_id}`
-                : "Sem Lote";
+                  ? `Lote ${p.production_batch_id}`
+                  : "Sem Lote";
             if (!groups[batch]) groups[batch] = [];
             groups[batch].push(p);
             if (selectedIds.has(String(p.id))) groupHasSelected[batch] = true;
@@ -111,11 +111,11 @@ $(document).ready(function () {
             })
             .forEach((batch) => {
               const products = groups[batch].sort((a, b) =>
-                String(a.serial_number).localeCompare(String(b.serial_number))
+                String(a.serial_number).localeCompare(String(b.serial_number)),
               );
               const collapseId = `batch-edit-${batch.replace(
                 /[^a-zA-Z0-9]/g,
-                ""
+                "",
               )}`;
               html += `
           <div class="batch-group mb-2" data-batch="${batch}">
@@ -140,8 +140,8 @@ $(document).ready(function () {
               <div class="product-card p-2 bg-white border rounded shadow-sm h-100" data-type="${(
                 p.tipo_name || ""
               ).toLowerCase()}" data-serial="${
-                  p.serial_number || ""
-                }" data-batch="${batch}">
+                p.serial_number || ""
+              }" data-batch="${batch}">
                 <div class="form-check h-100">
                   <input class="form-check-input product-select" type="checkbox" value="${
                     p.id
@@ -222,41 +222,45 @@ $(document).ready(function () {
     },
     dom: "frtip",
     order: [[0, "desc"]], // Ordenar por PP (mais recente primeiro)
+    initComplete: function () {
+      $("#orders-table").addClass("initialized");
+      $(".table-loading-static").remove();
+    },
   });
 
   // Filtro: Somente pedidos sem produtos
   function applyOnlyEmptyFilter() {
-    var val = $('#orders-only-empty-filter').val();
+    var val = $("#orders-only-empty-filter").val();
     // Última coluna é a oculta com total de produtos
     var totalColIdx = table.columns().indexes().length - 1;
-    if (val === 'empty') {
-      table.column(totalColIdx).search('^0$', true, false).draw();
+    if (val === "empty") {
+      table.column(totalColIdx).search("^0$", true, false).draw();
     } else {
-      table.column(totalColIdx).search('', true, false).draw();
+      table.column(totalColIdx).search("", true, false).draw();
     }
   }
 
   // Aplicar filtro vindo do sino (only_empty=1 na URL)
   try {
     var params = new URLSearchParams(window.location.search);
-    if (params.get('only_empty') === '1') {
-      $('#orders-only-empty-filter').val('empty');
+    if (params.get("only_empty") === "1") {
+      $("#orders-only-empty-filter").val("empty");
     }
-  } catch (e) { }
+  } catch (e) {}
 
   // Eventos
-  $(document).on('change', '#orders-only-empty-filter', function(){
+  $(document).on("change", "#orders-only-empty-filter", function () {
     applyOnlyEmptyFilter();
     // Atualizar a URL sem recarregar
     try {
       var url = new URL(window.location.href);
-      var val = $('#orders-only-empty-filter').val();
-      if (val === 'empty') {
-        url.searchParams.set('only_empty', '1');
+      var val = $("#orders-only-empty-filter").val();
+      if (val === "empty") {
+        url.searchParams.set("only_empty", "1");
       } else {
-        url.searchParams.delete('only_empty');
+        url.searchParams.delete("only_empty");
       }
-      window.history.replaceState({}, '', url.toString());
+      window.history.replaceState({}, "", url.toString());
     } catch (e) {}
   });
 
@@ -265,7 +269,7 @@ $(document).ready(function () {
 
   // Inicializar tooltips
   var tooltipTriggerList = [].slice.call(
-    document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    document.querySelectorAll('[data-bs-toggle="tooltip"]'),
   );
   tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl);
@@ -428,7 +432,7 @@ $(document).ready(function () {
 
           products.forEach((product) => {
             const saleDate = new Date(product.sale_date).toLocaleDateString(
-              "pt-BR"
+              "pt-BR",
             );
             html += `
                             <div class="product-card p-3 mb-3 border rounded">
@@ -517,7 +521,7 @@ $(document).ready(function () {
     const idsParam = selectedProducts.join(",");
     window.open(
       `src/controllers/LabelController.php?ids=${encodeURIComponent(idsParam)}`,
-      "_blank"
+      "_blank",
     );
   });
 
@@ -537,9 +541,9 @@ $(document).ready(function () {
         // Abrir página de etiquetas para o pedido completo
         window.open(
           `src/controllers/LabelController.php?order_id=${encodeURIComponent(
-            id
+            id,
           )}`,
-          "_blank"
+          "_blank",
         );
       }
     });
@@ -551,34 +555,30 @@ $(document).ready(function () {
     if (!id) return;
     window.open(
       `src/controllers/LabelController.php?id=${encodeURIComponent(id)}`,
-      "_blank"
+      "_blank",
     );
   });
 
-  // Gerar PDF do pedido (usando delegação de eventos)
+  // Gerar PDF de componentes do pedido (usando delegação de eventos)
   $(document).on("click", ".generate-pdf", function () {
     const id = $(this).data("id");
+    const orderNumber = $(this).data("order");
 
-    $.ajax({
-      type: "POST",
-      url: "src/controllers/ProductionOrderController.php",
-      data: {
-        action: "generate_pdf",
-        id: id,
-      },
-      success: function (response) {
-        const res = JSON.parse(response);
-        if (res.success) {
-          // Abrir PDF em nova aba ou fazer download
-          window.open(res.path, "_blank");
-        } else {
-          Swal.fire({
-            title: "Erro!",
-            text: "Erro ao gerar PDF",
-            icon: "error",
-          });
-        }
-      },
+    Swal.fire({
+      title: "Gerar PDF",
+      text: `Deseja gerar o PDF com os componentes dos produtos do pedido ${orderNumber}?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sim, gerar PDF",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Abrir página de PDF de componentes em nova aba
+        window.open(
+          `${window.basePath}/src/controllers/CompositesPdfController.php?order_id=${encodeURIComponent(id)}`,
+          "_blank",
+        );
+      }
     });
   });
 

@@ -8,7 +8,10 @@ AddType application/x-httpd-php .php
     # RewriteCond %{HTTPS} off
     # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     
-    # Se o arquivo ou diretório não existe, não faz nada
+    # Não redirecionar arquivos estáticos e controllers PHP
+    RewriteCond %{REQUEST_URI} !\.(?:css|js|jpe?g|gif|png|svg|ico|woff2?|ttf|eot|php)$ [NC]
+    
+    # Se o arquivo ou diretório não existe, redireciona para index.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^(.*)$ index.php [QSA,L]

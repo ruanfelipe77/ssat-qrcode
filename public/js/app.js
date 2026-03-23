@@ -1,6 +1,6 @@
 $(document).ready(function () {
   // Page guard: only execute on the Products main page
-  if (!document.getElementById('mcp-table')) {
+  if (!document.getElementById("mcp-table")) {
     return;
   }
   // Função para limpar e resetar o formulário
@@ -79,7 +79,7 @@ $(document).ready(function () {
       data: formData,
       success: function (response) {
         const modal = bootstrap.Modal.getInstance(
-          document.getElementById("mcpModal")
+          document.getElementById("mcpModal"),
         );
         modal.hide();
 
@@ -159,14 +159,14 @@ $(document).ready(function () {
     if (!id) return;
     window.open(
       `src/controllers/LabelController.php?id=${encodeURIComponent(id)}`,
-      "_blank"
+      "_blank",
     );
   });
 
   // Fechar modal ao clicar no botão de fechar
   $('.btn-close, .btn[data-bs-dismiss="modal"]').on("click", function () {
     const modal = bootstrap.Modal.getInstance(
-      document.getElementById("mcpModal")
+      document.getElementById("mcpModal"),
     );
     if (modal) {
       modal.hide();

@@ -42,6 +42,12 @@ $tipos = $tipoModel->getAll();
 
     <div class="card">
         <div class="card-body">
+            <div class="table-loading table-loading-static">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando dados...</span>
+                </div>
+                <p class="mt-2 mb-0">Carregando dados...</p>
+            </div>
             <table id="mcp-table" class="table table-striped table-hover" style="width:100%">
                 <thead>
                     <tr>
@@ -236,6 +242,10 @@ var table = $('#mcp-table').DataTable({
     dom: "frtip",
     order: [[0, 'desc']], // Ordenar por Lote (mais recente primeiro)
     destroy: true,
+    initComplete: function() {
+        $('#mcp-table').addClass('initialized');
+        $('.table-loading-static').remove();
+    },
     columnDefs: [
         { targets: 10, visible: false, searchable: true } // hidden status slug column
     ]
@@ -298,7 +308,7 @@ $(document).on('click', '.view-product-notes', function() {
 function viewCompositeRelation(id, type) {
     if (type === 'component') {
         // Visualizar o produto composto que contém este componente
-        $.get(`src/controllers/CompositeController.php?action=get_parent_composite&component_id=${id}`, function(response) {
+        $.get(`${window.basePath}/src/controllers/CompositeController.php?action=get_parent_composite&component_id=${id}`, function(response) {
             const data = typeof response === 'string' ? JSON.parse(response) : response;
             
             if (!data.assembly) {
@@ -324,7 +334,7 @@ function viewCompositeRelation(id, type) {
         });
     } else {
         // Visualizar os componentes deste produto composto
-        $.get(`src/controllers/CompositeController.php?action=get_composite_by_product&product_id=${id}`, function(response) {
+        $.get(`${window.basePath}/src/controllers/CompositeController.php?action=get_composite_by_product&product_id=${id}`, function(response) {
             const data = typeof response === 'string' ? JSON.parse(response) : response;
             
             if (!data.assembly) {
@@ -355,6 +365,8 @@ function viewCompositeRelation(id, type) {
                     <div class="text-start">
                         <p><strong>Produto:</strong> ${data.assembly.composite_tipo_name || 'N/A'}</p>
                         <p><strong>Status:</strong> ${data.assembly.composite_destination || 'N/A'}</p>
+                        <p><strong>Cliente:</strong> ${data.assembly.client_name || 'N/A'}</p>
+                        <p><strong>Nota Fiscal/Empenho:</strong> ${data.assembly.nfe || data.assembly.pp_number || 'N/A'}</p>
                         <p><strong>Montado em:</strong> ${data.assembly.created_at ? new Date(data.assembly.created_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                         <p><strong>Montado por:</strong> ${data.assembly.created_by_name || 'N/A'}</p>
                         <h6 class="mt-3">Componentes:</h6>

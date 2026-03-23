@@ -8,6 +8,9 @@ if (!isset($_SESSION['user_id']) || !$_SESSION['user_id']) {
     header('Location: login.php');
     exit;
 }
+
+// Definir base path dinâmico
+$basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
 ?>
 
 <!DOCTYPE html>
@@ -27,7 +30,7 @@ if (!isset($_SESSION['user_id']) || !$_SESSION['user_id']) {
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.2/dist/sweetalert2.min.css" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="public/css/app.css" rel="stylesheet">
+    <link href="<?= $basePath ?>/public/css/app.css" rel="stylesheet">
     
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -46,10 +49,14 @@ if (!isset($_SESSION['user_id']) || !$_SESSION['user_id']) {
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.2/dist/sweetalert2.all.min.js"></script>
     <!-- Custom JS -->
-    <script src="public/js/app.js"></script>
-    <script src="public/js/production_orders.js"></script>
-    <script src="public/js/batches.js"></script>
-    <script src="public/js/audit.js"></script>
+    <script src="<?= $basePath ?>/public/js/app.js"></script>
+    <script src="<?= $basePath ?>/public/js/production_orders.js"></script>
+    <script src="<?= $basePath ?>/public/js/batches.js"></script>
+    <script src="<?= $basePath ?>/public/js/audit.js"></script>
+    <script>
+        // Disponibilizar basePath para JavaScript
+        window.basePath = '<?= $basePath ?>';
+    </script>
 </head>
 
 <body>

@@ -19,6 +19,12 @@ $tipos = $TipoModel->getAll();
 
     <div class="card">
         <div class="card-body">
+            <div class="table-loading table-loading-static">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando dados...</span>
+                </div>
+                <p class="mt-2 mb-0">Carregando dados...</p>
+            </div>
             <table id="tipos-table" class="table table-striped table-hover" style="width:100%">
                 <thead>
                     <tr>

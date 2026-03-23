@@ -217,12 +217,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         case 'get_composite_by_product':
             // Para produtos compostos: buscar assembly pelo composite_product_id
             $productId = (int)$_GET['product_id'];
-            $sql = "SELECT a.*, t.nome as composite_tipo_name, u.name as created_by_name, p.destination as composite_destination
+            $sql = "SELECT a.*, 
+                           t.nome as composite_tipo_name, 
+                           u.name as created_by_name, 
+                           p.destination as composite_destination,
+                           CASE 
+                               WHEN c.name IS NOT NULL THEN c.name
+                               WHEN p.destination REGEXP '^[0-9]+\$' THEN CONCAT('Cliente ID: ', p.destination)
+                               WHEN p.destination = 'estoque' THEN 'Em Estoque'
+                               ELSE p.destination
+                           END as client_name,
+                           so.order_number as pp_number,
+                           so.nfe
                     FROM assemblies a
                     LEFT JOIN composite_templates ct ON a.template_id = ct.id
                     LEFT JOIN tipos t ON ct.tipo_id = t.id
                     LEFT JOIN users u ON a.created_by = u.id
                     LEFT JOIN products p ON a.composite_product_id = p.id
+                    LEFT JOIN sales_orders so ON p.production_order_id = so.id
+                    LEFT JOIN clients c ON (p.destination REGEXP '^[0-9]+\$' AND p.destination = c.id)
                     WHERE a.composite_product_id = :product_id AND a.status = 'finalized'";
             $stmt = Database::getInstance()->getConnection()->prepare($sql);
             $stmt->execute(['product_id' => $productId]);
