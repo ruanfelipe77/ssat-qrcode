@@ -73,7 +73,11 @@ class Product
                             FROM assemblies 
                             WHERE status = 'finalized'
                         ) a ON a.composite_product_id = p.id
-                        ORDER BY p.id DESC";
+                        ORDER BY 
+                            CASE WHEN p.sale_date IS NULL OR p.destination = 'estoque' THEN 1 ELSE 0 END ASC,
+                            p.sale_date DESC,
+                            CAST(COALESCE(p.serial_number, '0') AS UNSIGNED) DESC,
+                            p.id DESC";
             } else {
                 // Versão básica que funciona com estrutura original - OTIMIZADA
                 $sql = "SELECT p.id, 
@@ -117,7 +121,11 @@ class Product
                             FROM assemblies 
                             WHERE status = 'finalized'
                         ) a ON a.composite_product_id = p.id
-                        ORDER BY p.id DESC";
+                        ORDER BY 
+                            CASE WHEN p.sale_date IS NULL OR p.destination = 'estoque' THEN 1 ELSE 0 END ASC,
+                            p.sale_date DESC,
+                            CAST(COALESCE(p.serial_number, '0') AS UNSIGNED) DESC,
+                            p.id DESC";
             }
             
             

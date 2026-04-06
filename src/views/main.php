@@ -240,7 +240,7 @@ var table = $('#mcp-table').DataTable({
         }
     },
     dom: "frtip",
-    order: [[0, 'desc']], // Ordenar por Lote (mais recente primeiro)
+    order: [],
     destroy: true,
     initComplete: function() {
         $('#mcp-table').addClass('initialized');
