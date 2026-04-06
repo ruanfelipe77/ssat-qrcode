@@ -11,6 +11,10 @@ $(document).ready(function () {
       url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json",
     },
     dom: "frtip",
+    columnDefs: [
+      { targets: 6, visible: false, searchable: true },
+      { targets: 5, orderable: false },
+    ],
     initComplete: function () {
       console.log("DataTable inicializado");
       console.log("Total de linhas:", this.api().rows().count());

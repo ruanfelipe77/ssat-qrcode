@@ -8,43 +8,156 @@ $db = $database->getConnection();
 
 $poModel = new ProductionOrder($db);
 $orders = $poModel->getAll();
+
+$clientModel = new Client($db);
+$allClients = $clientModel->getAll();
+
+// Calcular cards de resumo
+$totalOrders  = count($orders);
+$pendingCount = 0;
+$inProdCount  = 0;
+$deliveredCount = 0;
+$uniqueClients = [];
+
+foreach ($orders as $o) {
+    if ($o['status'] === 'pending')       $pendingCount++;
+    if ($o['status'] === 'in_production') $inProdCount++;
+    if ($o['status'] === 'delivered')     $deliveredCount++;
+    if (!empty($o['client_name']))        $uniqueClients[$o['client_name']] = true;
+}
 ?>
 
-<div class="container-fluid p-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Pedidos de Produção</h2>
-        <div class="d-flex align-items-center gap-3">
-            <div class="input-group input-group-sm" title="Filtrar por pedidos sem produtos" style="max-width: 170px;">
-                <span class="input-group-text py-1 px-2"><i class="fas fa-filter small"></i></span>
-                <select id="orders-only-empty-filter" class="form-select form-select-sm">
-                    <option value="all">Todos</option>
-                    <option value="empty">Sem produtos</option>
-                </select>
+<div class="container-fluid px-4 pt-3 pb-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="fw-bold mb-1" style="color: #1a1a2e;">
+                <i class="fas fa-clipboard-list me-2" style="color: #0d6efd;"></i>Pedidos de Produção
+            </h4>
+            <small class="text-muted"><?= number_format($totalOrders, 0, ',', '.') ?> registros</small>
+        </div>
+        <button class="btn btn-primary btn-sm px-4" id="add-order">
+            <i class="fas fa-plus me-2"></i>Novo Pedido
+        </button>
+    </div>
+
+    <!-- Cards de resumo -->
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="summary-card" style="border-left: 4px solid #0d6efd;">
+                <div class="summary-card-body">
+                    <div class="summary-icon" style="background: rgba(13,110,253,0.1); color: #0d6efd;">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div>
+                        <div class="summary-value"><?= number_format($totalOrders, 0, ',', '.') ?></div>
+                        <div class="summary-label">Total</div>
+                    </div>
+                </div>
             </div>
-            <button class="btn btn-primary btn-sm px-4" id="add-order">
-                <i class="fas fa-plus me-2"></i>Novo Pedido
-            </button>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="summary-card" style="border-left: 4px solid #ffc107;">
+                <div class="summary-card-body">
+                    <div class="summary-icon" style="background: rgba(255,193,7,0.1); color: #e6a800;">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div>
+                        <div class="summary-value"><?= $pendingCount ?></div>
+                        <div class="summary-label">Pendentes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="summary-card" style="border-left: 4px solid #0dcaf0;">
+                <div class="summary-card-body">
+                    <div class="summary-icon" style="background: rgba(13,202,240,0.1); color: #0aa2c0;">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <div>
+                        <div class="summary-value"><?= $inProdCount ?></div>
+                        <div class="summary-label">Em Produção</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="summary-card" style="border-left: 4px solid #198754;">
+                <div class="summary-card-body">
+                    <div class="summary-icon" style="background: rgba(25,135,84,0.1); color: #198754;">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div>
+                        <div class="summary-value"><?= $deliveredCount ?></div>
+                        <div class="summary-label">Entregues</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
+    <!-- Barra de filtros -->
+    <div class="card filter-card mb-3">
+        <div class="card-body py-2 px-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-md-3">
+                    <label class="filter-label">Cliente</label>
+                    <select id="filterOrderClient" class="form-select form-select-sm">
+                        <option value="">Todos</option>
+                        <?php foreach ($allClients as $c): ?>
+                            <option value="<?= htmlspecialchars($c['city'] . '/' . $c['state']) ?>">
+                                <?= htmlspecialchars($c['name']) ?> — <?= $c['city'] ?>/<?= $c['state'] ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="filter-label">Status</label>
+                    <select id="filterOrderStatus" class="form-select form-select-sm">
+                        <option value="">Todos</option>
+                        <option value="pending">Pendente</option>
+                        <option value="in_production">Em Produção</option>
+                        <option value="completed">Concluído</option>
+                        <option value="delivered">Entregue</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="filter-label">Produtos</label>
+                    <select id="orders-only-empty-filter" class="form-select form-select-sm">
+                        <option value="all">Todos</option>
+                        <option value="empty">Sem produtos</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2 d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-danger flex-grow-1" id="btnClearOrderFilters">
+                        <i class="fas fa-times me-1"></i>Limpar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card table-card">
+        <div class="card-body p-0">
             <div class="table-loading table-loading-static">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Carregando dados...</span>
                 </div>
                 <p class="mt-2 mb-0">Carregando dados...</p>
             </div>
-            <table id="orders-table" class="table table-striped table-hover" style="width:100%">
+            <table id="orders-table" class="table table-hover mb-0" style="width:100%">
                 <thead>
                     <tr>
                         <th>Pedido</th>
                         <th>Cliente</th>
                         <th>Data</th>
-                        <th>Produtos</th>
+                        <th class="text-center">Produtos</th>
                         <th>Status</th>
                         <th>Garantia</th>
-                        <th style="width: 180px; text-align: center;">Ações</th>
+                        <th class="text-center" style="width: 160px;">Ações</th>
+                        <th class="d-none">status_slug</th>
                         <th class="d-none">total_products_hidden</th>
                     </tr>
                 </thead>
@@ -52,23 +165,19 @@ $orders = $poModel->getAll();
                     <?php foreach ($orders as $order) : ?>
                         <tr>
                             <td>
-                                <span class="badge bg-primary">
+                                <span class="badge rounded-pill bg-primary bg-opacity-75 fw-semibold">
                                     <?= $order['order_number'] ?>
                                 </span>
                             </td>
-                            <td>
-                                <span class="text-dark fw-semibold">
-                                    <?= $order['client_city'] ?>/<?= $order['client_state'] ?>
-                                </span>
-                            </td>
-                            <td><?= (new DateTime($order['order_date']))->format('d/m/Y') ?></td>
+                            <td class="fw-medium"><?= $order['client_city'] ?>/<?= $order['client_state'] ?></td>
+                            <td class="text-muted small"><?= (new DateTime($order['order_date']))->format('d/m/Y') ?></td>
                             <td class="text-center">
-                                <button class="btn btn-link text-primary p-0 view-products" 
+                                <button class="btn btn-sm btn-light action-btn view-products"
                                         data-id="<?= $order['id'] ?>"
                                         data-order="<?= htmlspecialchars($order['order_number']) ?>"
                                         title="Ver Produtos">
-                                    <span class="position-relative">
-                                        <i class="fas fa-box-open fs-6"></i>
+                                    <span class="position-relative px-1">
+                                        <i class="fas fa-box-open"></i>
                                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary products-badge">
                                             <?= $order['total_products'] ?>
                                         </span>
@@ -76,44 +185,55 @@ $orders = $poModel->getAll();
                                 </button>
                             </td>
                             <td>
-                                <select class="form-select form-select-sm status-select" 
+                                <?php
+                                $statusMap = [
+                                    'pending'     => ['label' => 'Pendente',    'color' => '#e6a800', 'bg' => 'rgba(255,193,7,0.15)'],
+                                    'in_production'=> ['label' => 'Em Produção', 'color' => '#0aa2c0', 'bg' => 'rgba(13,202,240,0.15)'],
+                                    'completed'   => ['label' => 'Concluído',   'color' => '#198754', 'bg' => 'rgba(25,135,84,0.15)'],
+                                    'delivered'   => ['label' => 'Entregue',    'color' => '#0d6efd', 'bg' => 'rgba(13,110,253,0.15)'],
+                                ];
+                                $s = $statusMap[$order['status']] ?? ['label' => $order['status'], 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.15)'];
+                                ?>
+                                <select class="form-select form-select-sm status-select order-status-styled"
                                         data-id="<?= $order['id'] ?>"
-                                        style="width: 120px;">
-                                    <option value="pending" <?= $order['status'] == 'pending' ? 'selected' : '' ?>>Pendente</option>
-                                    <option value="in_production" <?= $order['status'] == 'in_production' ? 'selected' : '' ?>>Em Produção</option>
-                                    <option value="completed" <?= $order['status'] == 'completed' ? 'selected' : '' ?>>Concluído</option>
-                                    <option value="delivered" <?= $order['status'] == 'delivered' ? 'selected' : '' ?>>Entregue</option>
+                                        data-status="<?= $order['status'] ?>"
+                                        style="width: 130px; color: <?= $s['color'] ?>; border-color: <?= $s['color'] ?>; background-color: <?= $s['bg'] ?>; font-weight: 600; font-size: 0.78rem;">
+                                    <option value="pending"      <?= $order['status'] == 'pending'       ? 'selected' : '' ?>>Pendente</option>
+                                    <option value="in_production"<?= $order['status'] == 'in_production' ? 'selected' : '' ?>>Em Produção</option>
+                                    <option value="completed"    <?= $order['status'] == 'completed'     ? 'selected' : '' ?>>Concluído</option>
+                                    <option value="delivered"    <?= $order['status'] == 'delivered'     ? 'selected' : '' ?>>Entregue</option>
                                 </select>
                             </td>
-                            <td><?= $order['warranty'] ?></td>
+                            <td class="small"><?= $order['warranty'] ?></td>
                             <td>
-                                <div class="d-flex justify-content-center align-items-center gap-3">
-                                    <button class="btn btn-link text-dark p-0 edit-order" 
-                                            data-id="<?= $order['id'] ?>" 
+                                <div class="d-flex justify-content-center align-items-center gap-2">
+                                    <button class="btn btn-sm btn-light action-btn edit-order"
+                                            data-id="<?= $order['id'] ?>"
                                             data-order="<?= htmlspecialchars($order['order_number']) ?>"
                                             title="Editar Pedido">
-                                        <i class="fas fa-pen fs-5"></i>
+                                        <i class="fas fa-pen"></i>
                                     </button>
-                                    <button class="btn btn-link text-dark p-0 print-all" 
-                                            data-id="<?= $order['id'] ?>" 
+                                    <button class="btn btn-sm btn-light action-btn print-all"
+                                            data-id="<?= $order['id'] ?>"
                                             title="Imprimir QR Codes">
-                                        <i class="fas fa-print fs-5"></i>
+                                        <i class="fas fa-qrcode"></i>
                                     </button>
-                                    <button class="btn btn-link text-dark p-0 generate-pdf" 
-                                            data-id="<?= $order['id'] ?>" 
+                                    <button class="btn btn-sm btn-light action-btn generate-pdf"
+                                            data-id="<?= $order['id'] ?>"
                                             data-order="<?= htmlspecialchars($order['order_number']) ?>"
                                             title="Gerar PDF">
-                                        <i class="fas fa-file-pdf fs-5"></i>
+                                        <i class="fas fa-file-pdf text-danger"></i>
                                     </button>
-                                    <button class="btn btn-link text-danger p-0 delete-order" 
+                                    <button class="btn btn-sm btn-light action-btn delete-order"
                                             data-id="<?= $order['id'] ?>"
                                             data-order="<?= htmlspecialchars($order['order_number']) ?>"
                                             data-products="<?= $order['total_products'] ?>"
                                             title="Excluir Pedido">
-                                        <i class="fas fa-trash-alt fs-5"></i>
+                                        <i class="fas fa-trash-alt text-danger"></i>
                                     </button>
                                 </div>
                             </td>
+                            <td class="d-none"><?= $order['status'] ?></td>
                             <td class="d-none"><?= (int)$order['total_products'] ?></td>
                         </tr>
                     <?php endforeach; ?>
@@ -167,71 +287,83 @@ $orders = $poModel->getAll();
 <?php include 'src/views/modal_order.php'; ?>
 
 <style>
-.badge {
-    font-size: 0.875rem;
-    padding: 0.5rem 0.75rem;
-}
+/* === reutiliza o mesmo padrão premium de main.php === */
+.summary-card { background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,.06); transition:transform .2s,box-shadow .2s; }
+.summary-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.1); }
+.summary-card-body { display:flex; align-items:center; gap:14px; padding:16px 18px; }
+.summary-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0; }
+.summary-value { font-size:1.4rem; font-weight:700; line-height:1.1; color:#1a1a2e; }
+.summary-label { font-size:.78rem; color:#6c757d; font-weight:500; text-transform:uppercase; letter-spacing:.3px; }
 
-.status-select {
-    border: none;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-}
+.filter-card { border:1px solid #e9ecef; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,.04); background:#fff; }
+.filter-label { display:block; font-size:.7rem; font-weight:600; color:#6c757d; text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+.filter-card .form-select-sm { font-size:.82rem; border-radius:6px; border-color:#dee2e6; transition:border-color .2s,box-shadow .2s; }
+.filter-card .form-select-sm:focus { border-color:#0d6efd; box-shadow:0 0 0 3px rgba(13,110,253,.15); }
+.filter-card .form-select-sm.active-filter { border-color:#0d6efd; background-color:rgba(13,110,253,.03); }
 
-.status-select option[value="pending"] {
-    background-color: #ffc107;
-    color: #000;
-}
+.table-card { border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.06); border:none; }
+.table-card .table thead th { background:#f1f3f5; border-bottom:2px solid #dee2e6; font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#495057; padding:10px 14px; white-space:nowrap; }
+.table-card .table tbody td { padding:8px 14px; vertical-align:middle; font-size:.85rem; border-bottom:1px solid #f1f3f5; }
+.table-card .table tbody tr:hover { background-color:rgba(13,110,253,.03); }
 
-.status-select option[value="in_production"] {
-    background-color: #0dcaf0;
-    color: #000;
-}
+.action-btn { width:30px; height:30px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid #e9ecef; font-size:.8rem; transition:all .15s; }
+.action-btn:hover { background:#e9ecef; transform:translateY(-1px); }
 
-.status-select option[value="completed"] {
-    background-color: #198754;
-    color: #fff;
-}
+/* Status select colorido */
+.order-status-styled { padding:.15rem 1.5rem .15rem .5rem; border-radius:20px; min-height:28px; cursor:pointer; }
+.order-status-styled:focus { box-shadow:none; }
 
-.status-select option[value="delivered"] {
-    background-color: #0d6efd;
-    color: #fff;
-}
+/* Badge de produtos */
+.products-badge { font-size:.5rem; padding:.1rem .25rem; }
 
-.btn-link:hover {
-    opacity: 0.7;
-    transform: scale(1.1);
-    transition: all 0.2s ease;
-}
-
-.btn-link:active {
-    transform: scale(0.95);
-}
-
-/* Reduzir altura das linhas da tabela */
-#orders-table tbody tr td {
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    vertical-align: middle;
-}
-
-/* Afinar o select de status */
-.status-select {
-    border: 1px solid #dee2e6;
-    /* padding direita maior para não cortar o caret do select */
-    padding: 0.12rem 1.2rem 0.12rem 0.4rem;
-    line-height: 1.2;
-    height: auto;           /* deixar o navegador calcular */
-    min-height: 28px;       /* altura mínima enxuta com texto visível */
-    font-size: 0.85rem;     /* texto um pouco menor */
-    border-radius: 0.35rem;
-}
-
-/* Badge menor sobre o ícone de produtos */
-.products-badge {
-    font-size: 0.5rem;
-    padding: 0.1rem 0.25rem;
-}
+/* DataTables override */
+#orders-table_wrapper .dataTables_filter input { border-radius:6px; border-color:#dee2e6; font-size:.82rem; padding:.3rem .6rem; }
+#orders-table_wrapper .dataTables_info { font-size:.82rem; color:#6c757d; padding:12px 16px; }
+#orders-table_wrapper .dataTables_paginate { padding:8px 16px 12px; }
+#orders-table_wrapper .dataTables_paginate .paginate_button { border-radius:6px !important; margin:0 2px; font-size:.82rem; }
+#orders-table_wrapper .dataTables_paginate .paginate_button.current { background:#0d6efd !important; border-color:#0d6efd !important; color:#fff !important; }
+#orders-table_wrapper .dataTables_length { padding:12px 16px; font-size:.82rem; }
 </style>
+
+<script>
+// Filtros adicionais por coluna para a tabela de pedidos
+$(document).ready(function() {
+    if (!window._ordersTableFiltersInit && typeof ordersTable !== 'undefined') {
+        window._ordersTableFiltersInit = true;
+    }
+
+    // Aguarda o DataTable ser inicializado pelo production_orders.js
+    var waitForTable = setInterval(function() {
+        if ($.fn.DataTable.isDataTable('#orders-table')) {
+            clearInterval(waitForTable);
+            initOrderFilters();
+        }
+    }, 100);
+
+    function initOrderFilters() {
+        function applyOrderFilters() {
+            var dt = $('#orders-table').DataTable();
+            var client = $('#filterOrderClient').val();
+            var status = $('#filterOrderStatus').val();
+
+            // Col 1 = Cliente, Col 7 = status_slug
+            dt.column(1).search(client ? $.fn.dataTable.util.escapeRegex(client) : '', true, false);
+            dt.column(7).search(status ? '^' + $.fn.dataTable.util.escapeRegex(status) + '$' : '', true, false);
+            dt.draw();
+
+            $('.filter-card .form-select-sm').each(function() {
+                $(this).toggleClass('active-filter', $(this).val() !== '' && $(this).val() !== 'all');
+            });
+        }
+
+        $('#filterOrderClient, #filterOrderStatus').on('change', applyOrderFilters);
+
+        $('#btnClearOrderFilters').on('click', function() {
+            $('#filterOrderClient').val('');
+            $('#filterOrderStatus').val('');
+            $('#orders-only-empty-filter').val('all').trigger('change');
+            applyOrderFilters();
+        });
+    }
+});
+</script>
