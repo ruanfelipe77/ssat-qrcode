@@ -21,13 +21,14 @@ function formatDestination($conn, $destination) {
   }
   // Se for um ID numérico de cliente, buscar cidade/UF
   if (preg_match('/^\d+$/', (string)$destination)) {
-    $stmt = $conn->prepare('SELECT city, state FROM clients WHERE id = :id');
+    $stmt = $conn->prepare('SELECT `city`, `name`, `state` FROM `clients` WHERE `id` = :id');
     $stmt->execute(['id' => $destination]);
     if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
       $city = trim($row['city'] ?? '');
       $state = trim($row['state'] ?? '');
+      $name = trim($row['name'] ?? '');
       if ($city !== '' || $state !== '') {
-        return htmlspecialchars($city . ($state ? '/' . $state : ''));
+        return htmlspecialchars($name . ' (' . $city . ($state ? '/' . $state : '') . ')');
       }
     }
   }
@@ -230,7 +231,7 @@ $missingAny      = $missingSerial || $missingSale || $missingDest || $missingWar
                       <?= $saleVal ?>
                     </li>
                     <li class="mb-2">
-                      <strong>Destino:</strong>
+                      <strong>Cliente:</strong>
                       <?php if ($missingDest): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
                       <?= $destVal ?>
                     </li>
@@ -341,7 +342,7 @@ $missingAny      = $missingSerial || $missingSale || $missingDest || $missingWar
               <?= $saleVal ?>
             </li>
             <li class="mb-1">
-              <strong>Destino:</strong>
+              <strong>Cliente:</strong>
               <?php if ($missingDest): ?><i class="fas fa-exclamation-circle text-danger me-1"></i><?php endif; ?>
               <?= $destVal ?>
             </li>
