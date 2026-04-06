@@ -55,6 +55,15 @@ class Product
                                    ELSE COALESCE(ps.color, '#198754')
                                END as status_color,
                                CASE 
+                                   WHEN p.status = 'in_composite' OR ps.name = 'em_composicao' THEN 'fas fa-cube'
+                                   WHEN ps.name = 'em_estoque' THEN 'fas fa-check-circle'
+                                   WHEN ps.name = 'paraná' OR ps.name = 'parana' THEN 'fas fa-truck'
+                                   WHEN ps.name = 'externo' THEN 'fas fa-external-link-alt'
+                                   WHEN ps.name = 'defeito' THEN 'fas fa-exclamation-triangle'
+                                   WHEN ps.name = 'manutenção' OR ps.name = 'manutencao' THEN 'fas fa-wrench'
+                                   ELSE 'fas fa-check-circle'
+                               END as status_icon,
+                               CASE 
                                    WHEN p.destination = 'estoque' THEN 'Em Estoque'
                                    WHEN c.id IS NOT NULL THEN c.name
                                    WHEN p.destination REGEXP '^[0-9]+$' THEN CONCAT('Cliente ID: ', p.destination)
