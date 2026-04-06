@@ -31,7 +31,8 @@ $(document).ready(function () {
       url: "src/controllers/ProductController.php",
       data: { id: id },
       success: function (response) {
-        const mcp = JSON.parse(response);
+        const mcp =
+          typeof response === "string" ? JSON.parse(response) : response;
         resetForm();
 
         $(".modal-title-text").text("Editar Produto");
@@ -124,7 +125,8 @@ $(document).ready(function () {
           url: "src/controllers/ProductController.php",
           data: { action: "delete", id: id },
           success: function (response) {
-            const res = JSON.parse(response);
+            const res =
+              typeof response === "string" ? JSON.parse(response) : response;
             if (res.success) {
               Swal.fire({
                 title: "Excluído!",

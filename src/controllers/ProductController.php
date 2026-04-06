@@ -5,6 +5,8 @@ require '../../src/models/Product.php';
 require '../../src/models/Audit.php';
 require_once '../../vendor/autoload.php';
 
+header('Content-Type: application/json; charset=utf-8');
+
 $productModel = new Product(Database::getInstance()->getConnection());
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -87,10 +89,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
-} elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
-    $id = $_GET['id'];
-    $mcp = $productModel->getById($id);
-    echo json_encode($mcp);
+} elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (isset($_GET['client_id'])) {
+        $clientId = $_GET['client_id'];
+        $products = $productModel->getByClientId($clientId);
+        echo json_encode($products);
+        exit;
+    }
+
+    if (isset($_GET['id'])) {
+        $id = $_GET['id'];
+        $mcp = $productModel->getById($id);
+        echo json_encode($mcp);
+        exit;
+    }
+
+    echo json_encode([]);
     exit;
 }
-

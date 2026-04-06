@@ -44,7 +44,11 @@ $(document).ready(function () {
 
     // Atualizar informações do cliente no modal
     $(".client-name").text(clientName);
-    $(".client-location span").text(clientLocation);
+    if ($(".client-location span").length > 0) {
+      $(".client-location span").text(clientLocation);
+    } else {
+      $(".client-location").text(clientLocation);
+    }
 
     // Carregar produtos do cliente
     $.ajax({
@@ -52,15 +56,18 @@ $(document).ready(function () {
       url: "src/controllers/ProductController.php",
       data: { client_id: clientId },
       success: function (response) {
-        const products = JSON.parse(response);
-        let html = "";
+        try {
+          const products =
+            typeof response === "string" ? JSON.parse(response) : response;
+          let html = "";
 
-        if (products.length > 0) {
-          products.forEach((product) => {
-            const saleDate = new Date(product.sale_date).toLocaleDateString(
-              "pt-BR",
-            );
-            html += `
+          if (products.length > 0) {
+            products.forEach((product) => {
+              const saleDate = product.sale_date
+                ? new Date(product.sale_date).toLocaleDateString("pt-BR")
+                : "Não informado";
+
+              html += `
                             <div class="product-card p-3 mb-3 border rounded">
                                 <div class="d-flex align-items-center">
                                     <div class="product-icon me-3">
@@ -69,11 +76,11 @@ $(document).ready(function () {
                                     <div class="flex-grow-1">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <h6 class="mb-1">${product.tipo_name}</h6>
+                                                <h6 class="mb-1">${product.tipo_name || "Sem Tipo"}</h6>
                                                 <p class="mb-0 text-muted small">
                                                     <span class="me-3">
                                                         <i class="fas fa-barcode me-1"></i>
-                                                        ${product.serial_number}
+                                                        ${product.serial_number || "N/A"}
                                                     </span>
                                                     <span class="me-3">
                                                         <i class="fas fa-calendar me-1"></i>
@@ -81,7 +88,7 @@ $(document).ready(function () {
                                                     </span>
                                                     <span>
                                                         <i class="fas fa-shield-alt me-1"></i>
-                                                        ${product.warranty}
+                                                        ${product.warranty || "N/A"}
                                                     </span>
                                                 </p>
                                             </div>
@@ -95,24 +102,32 @@ $(document).ready(function () {
                                 </div>
                             </div>
                         `;
-          });
-        } else {
-          html = `
+            });
+          } else {
+            html = `
                         <div class="text-center text-muted py-5">
                             <i class="fas fa-box-open mb-3" style="font-size: 3rem;"></i>
                             <h5>Nenhum produto encontrado</h5>
                             <p class="mb-0">Este cliente ainda não possui produtos cadastrados.</p>
                         </div>
                     `;
+          }
+
+          $(".products-list").html(html);
+
+          const el = document.getElementById("productsModal");
+          const modal = bootstrap.Modal.getOrCreateInstance(el);
+          modal.show();
+        } catch (e) {
+          console.error("Erro ao processar produtos:", response, e);
+          $(".products-list").html(`
+            <div class="text-center text-danger py-5">
+              <i class="fas fa-exclamation-triangle mb-3" style="font-size: 3rem;"></i>
+              <h5>Erro ao carregar produtos</h5>
+              <p class="mb-0">Não foi possível carregar os produtos deste cliente.</p>
+            </div>
+          `);
         }
-
-        $(".products-list").html(html);
-
-        // Inicializar o modal
-        const modal = new bootstrap.Modal(
-          document.getElementById("productsModal"),
-        );
-        modal.show();
       },
       error: function () {
         Swal.fire({
@@ -122,6 +137,16 @@ $(document).ready(function () {
         });
       },
     });
+  });
+
+  // Imprimir QR individual (abrir em nova aba)
+  $(document).on("click", ".print-qrcode", function () {
+    const id = $(this).data("id");
+    if (!id) return;
+    window.open(
+      `src/controllers/QrController.php?id=${encodeURIComponent(id)}&s=300`,
+      "_blank",
+    );
   });
 
   // Manipulador para adicionar novo cliente

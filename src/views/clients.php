@@ -102,45 +102,6 @@ $productModel = new Product($db);
     </div>
 </div>
 
-<!-- Modal de Produtos do Cliente -->
-<div class="modal fade" id="productsModal" tabindex="-1" aria-labelledby="productsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="productsModalLabel">
-                    <i class="fas fa-box-open me-2"></i>
-                    <span class="modal-title-text">Produtos do Cliente</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="client-info mb-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="client-avatar me-3">
-                            <i class="fas fa-user-circle text-primary" style="font-size: 3rem;"></i>
-                        </div>
-                        <div>
-                            <h4 class="client-name mb-1"></h4>
-                            <p class="client-location text-muted mb-0">
-                                <i class="fas fa-map-marker-alt me-1"></i>
-                                <span></span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="products-list">
-                    <!-- Produtos serão carregados aqui via JavaScript -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                    <i class="fas fa-check me-2"></i>Fechar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- DataTables Buttons -->
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
